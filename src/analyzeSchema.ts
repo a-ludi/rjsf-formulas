@@ -27,12 +27,87 @@ export function analyzeSchema(
   return fields
 }
 
+const COMPOSITION_KEYS = ['$ref', 'oneOf', 'anyOf', 'allOf'] as const
+
+function resolveContextMode(
+  value: unknown,
+  path: (string | number | ArrayIndex)[]
+): ContextMode {
+  if (value === undefined || value === 'siblings') return 'siblings'
+  if (value === 'extended') return 'extended'
+  console.warn(
+    `[rjsf-formulas] Unknown x-formula-context value "${value}" at path [${formatPath(path)}], treating as "siblings"`
+  )
+  return 'siblings'
+}
+
+function formatPath(path: (string | number | ArrayIndex)[]): string {
+  return path.map(s => (typeof s === 'symbol' ? '[*]' : String(s))).join(', ')
+}
+
 function traverse(
-  _schema: RJSFSchema,
-  _path: (string | number | ArrayIndex)[],
-  _fields: FormulaField[],
-  _formulaKey: string,
-  _formulaContextKey: string
+  schema: RJSFSchema,
+  path: (string | number | ArrayIndex)[],
+  fields: FormulaField[],
+  formulaKey: string,
+  formulaContextKey: string
 ): void {
-  // implementation added in tasks 3–8
+  // Warn on composition operators (issue 06)
+  for (const key of COMPOSITION_KEYS) {
+    if (key in schema) {
+      console.warn(
+        `[rjsf-formulas] Schema composition operator "${key}" at path [${formatPath(path)}] is not supported and will be skipped. See issue 06.`
+      )
+    }
+  }
+
+  // Rule 1: computed field — record and stop
+  if (formulaKey in schema) {
+    fields.push({
+      path,
+      formula: (schema as Record<string, unknown>)[formulaKey] as string,
+      contextMode: resolveContextMode(
+        (schema as Record<string, unknown>)[formulaContextKey],
+        path
+      ),
+    })
+    return
+  }
+
+  // Rule 2: object — recurse into properties
+  if (schema.type === 'object' && schema.properties) {
+    for (const [key, propSchema] of Object.entries(schema.properties)) {
+      traverse(
+        propSchema as RJSFSchema,
+        [...path, key],
+        fields,
+        formulaKey,
+        formulaContextKey
+      )
+    }
+  }
+
+  // Rule 3: array — recurse into prefixItems and/or items
+  if (schema.type === 'array') {
+    const schemaAny = schema as Record<string, unknown>
+
+    // Rule 3a: prefixItems (tuple positions with static indices)
+    if (Array.isArray(schemaAny['prefixItems'])) {
+      const prefixItems = schemaAny['prefixItems'] as RJSFSchema[]
+      prefixItems.forEach((itemSchema, index) => {
+        traverse(itemSchema, [...path, index], fields, formulaKey, formulaContextKey)
+      })
+    }
+
+    // Rule 3b: items (uniform array — all elements share one schema)
+    if (schema.items && !Array.isArray(schema.items)) {
+      traverse(
+        schema.items as RJSFSchema,
+        [...path, ARRAY_INDEX],
+        fields,
+        formulaKey,
+        formulaContextKey
+      )
+    }
+  }
 }
