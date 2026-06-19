@@ -18,6 +18,7 @@ export default defineConfig({
           alias: {
             '@rjsf/core': 'rjsf-core-v5',
             '@rjsf/utils': 'rjsf-utils-v5',
+            '@rjsf/validator-ajv8': 'rjsf-validator-v5',
           },
         },
       },
