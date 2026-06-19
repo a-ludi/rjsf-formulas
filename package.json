@@ -2,6 +2,12 @@
   "name": "rjsf-formulas",
   "version": "0.1.0",
   "type": "module",
+  "files": [
+    "dist/"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "exports": {
     "import": {
       "types": "./dist/index.d.mts",
