@@ -32,3 +32,11 @@ describe('analyzeSchema — nested objects', () => {
     expect(result[0].formula).toBe('price * quantity')
   })
 })
+
+describe('analyzeSchema — array items', () => {
+  it('uses ARRAY_INDEX sentinel for uniform array items', () => {
+    const result = analyzeSchema(fixtures.arrayWithItems as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['items', ARRAY_INDEX, 'total'])
+  })
+})
