@@ -1,5 +1,6 @@
 import type { RJSFSchema } from '@rjsf/utils'
 
+/** Package-internal — not re-exported from the public entry point. Used by enrich.ts and mergeReadOnly.ts. */
 export const ARRAY_INDEX: unique symbol = Symbol('arrayIndex')
 export type ArrayIndex = typeof ARRAY_INDEX
 
@@ -63,9 +64,16 @@ function traverse(
 
   // Rule 1: computed field — record and stop
   if (formulaKey in schema) {
+    const formula = (schema as Record<string, unknown>)[formulaKey]
+    if (typeof formula !== 'string') {
+      console.warn(
+        `[rjsf-formulas] Formula at path [${formatPath(path)}] is not a string (got ${typeof formula}), skipping.`
+      )
+      return
+    }
     fields.push({
       path,
-      formula: (schema as Record<string, unknown>)[formulaKey] as string,
+      formula,
       contextMode: resolveContextMode(
         (schema as Record<string, unknown>)[formulaContextKey],
         path

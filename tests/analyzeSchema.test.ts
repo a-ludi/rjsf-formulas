@@ -132,3 +132,20 @@ describe('analyzeSchema — custom options', () => {
     expect(result[0].contextMode).toBe('extended')
   })
 })
+
+describe('analyzeSchema — non-string formula guard', () => {
+  it('skips fields with non-string formula values and warns', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const schema = {
+      type: 'object',
+      properties: {
+        a: { type: 'number' },
+        bad: { type: 'number', 'x-formula': 42 },
+      },
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toEqual([])
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('not a string'))
+    warnSpy.mockRestore()
+  })
+})
