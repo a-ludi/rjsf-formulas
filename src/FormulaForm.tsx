@@ -45,6 +45,8 @@ export function FormulaForm<
 
   const enrichedFormData = useMemo(
     () => enrich(formData, formulaFields, evaluator, maxConvergencePasses, onFormulaError) as T,
+    // onFormulaError intentionally omitted: it is expected to be a stable reference (useCallback).
+    // Including it would cause spurious re-enrichments when parents pass inline callbacks.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [formData, formulaFields, evaluator, maxConvergencePasses]
   )
@@ -55,7 +57,9 @@ export function FormulaForm<
   )
 
   useEffect(() => {
-    // Fires once on mount to push initial enriched values to the parent.
+    if (formulaFields.length === 0) return
+    // Pushes the initial enriched values to the parent on mount. The event only
+    // carries formData — other IChangeEvent fields are not available at this point.
     onChange?.({ formData: enrichedFormData } as IChangeEvent<T, S, F>, undefined)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
