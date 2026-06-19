@@ -53,7 +53,9 @@ Bootstrap the repository with a working build, test, and publish pipeline. All s
     "vitest": "^3",
     "typescript": "^5",
     "publint": "^0.3",
-    "husky": "^9"
+    "husky": "^9",
+    "react": "^18",
+    "@types/react": "^18"
   }
 }
 ```
@@ -105,6 +107,8 @@ export default defineConfig({
         test: {
           name: 'rjsf-v5',
           include: ['tests/**/*.test.ts'],
+        },
+        resolve: {
           alias: {
             '@rjsf/core': 'rjsf-core-v5',
             '@rjsf/utils': 'rjsf-utils-v5',
