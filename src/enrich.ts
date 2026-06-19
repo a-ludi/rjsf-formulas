@@ -119,7 +119,7 @@ export function enrich(
   }
 
   // maxConvergencePasses exceeded — identify and report non-converging fields
-  const candidate = applyAllFormulas(current, formulaFields, evaluator, onFormulaError)
+  const candidate = applyAllFormulas(current, formulaFields, evaluator, undefined)
   const result = structuredClone(candidate)
 
   for (const field of formulaFields) {
