@@ -93,3 +93,42 @@ describe('analyzeSchema — context modes', () => {
     warnSpy.mockRestore()
   })
 })
+
+describe('analyzeSchema — composition operators', () => {
+  it('skips oneOf branches and emits a warning', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = analyzeSchema(fixtures.withOneOfSchema as any)
+    expect(result).toEqual([])
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('oneOf'))
+    warnSpy.mockRestore()
+  })
+})
+
+describe('analyzeSchema — custom options', () => {
+  it('uses a custom formulaKey', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        total: { type: 'number', 'x-calc': 'a + b' },
+      },
+    }
+    const result = analyzeSchema(schema as any, { formulaKey: 'x-calc' })
+    expect(result).toHaveLength(1)
+    expect(result[0].formula).toBe('a + b')
+  })
+
+  it('uses a custom formulaContextKey', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        total: {
+          type: 'number',
+          'x-formula': 'a + b',
+          'x-ctx': 'extended',
+        },
+      },
+    }
+    const result = analyzeSchema(schema as any, { formulaContextKey: 'x-ctx' })
+    expect(result[0].contextMode).toBe('extended')
+  })
+})
