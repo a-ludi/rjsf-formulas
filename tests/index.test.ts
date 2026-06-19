@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { FormulaForm } from '../src/index'
+import { analyzeSchema } from '../src/index'
 
-describe('FormulaForm', () => {
-  it('is exported', () => {
-    expect(FormulaForm).toBeDefined()
+describe('Public API', () => {
+  it('exports analyzeSchema function', () => {
+    expect(analyzeSchema).toBeDefined()
+    expect(typeof analyzeSchema).toBe('function')
   })
 })
