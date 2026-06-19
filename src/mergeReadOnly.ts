@@ -7,7 +7,7 @@ export function mergeReadOnly(
   uiSchema: UiSchema | undefined,
   formulaFields: FormulaField[]
 ): UiSchema {
-  const result: UiSchema = { ...(uiSchema ?? {}) }
+  const result: UiSchema = structuredClone(uiSchema ?? {})
   const mixedArrayPaths = findMixedArrayPaths(formulaFields)
 
   for (const field of formulaFields) {
@@ -74,6 +74,10 @@ function setReadOnly(
 
   if (typeof head === 'number') {
     // prefixItems tuple slot — use items as array
+    if (uiSchema['items'] !== undefined && !Array.isArray(uiSchema['items'])) {
+      console.warn('[rjsf-formulas] mergeReadOnly: cannot inject ui:readonly at tuple index because existing uiSchema has items as an object. Skipping.')
+      return
+    }
     if (!Array.isArray(uiSchema['items'])) {
       uiSchema['items'] = []
     }
@@ -97,7 +101,11 @@ function setReadOnly(
     setReadOnly(uiSchema['additionalItems'] as UiSchema, tail, mixedArrayPaths, [...traversedPath, head])
   } else {
     // Uniform array: ARRAY_INDEX → items as object
-    if (!uiSchema['items'] || typeof uiSchema['items'] !== 'object' || Array.isArray(uiSchema['items'])) {
+    if (Array.isArray(uiSchema['items'])) {
+      console.warn('[rjsf-formulas] mergeReadOnly: cannot inject ui:readonly for uniform array because existing uiSchema has items as an array. Skipping.')
+      return
+    }
+    if (!uiSchema['items'] || typeof uiSchema['items'] !== 'object') {
       uiSchema['items'] = {}
     }
     setReadOnly(uiSchema['items'] as UiSchema, tail, mixedArrayPaths, [...traversedPath, head])

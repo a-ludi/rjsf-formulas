@@ -65,4 +65,38 @@ describe('mergeReadOnly', () => {
       },
     })
   })
+
+  it('does not mutate the original uiSchema', () => {
+    const fields: FormulaField[] = [
+      { path: ['total'], formula: 'a + b', contextMode: 'siblings' },
+    ]
+    const original = { total: { 'ui:widget': 'updown' } }
+    const originalRef = original.total  // hold reference to nested object
+    mergeReadOnly(original, fields)
+    expect(original.total['ui:widget']).toBe('updown')
+    expect(original.total['ui:readonly']).toBeUndefined()  // must not be mutated
+    expect(original.total).toBe(originalRef)  // same object reference, not mutated
+  })
+
+  it('preserves existing items object when writing a tuple slot would conflict', () => {
+    const fields: FormulaField[] = [
+      { path: ['rows', 0], formula: 'a + b', contextMode: 'siblings' },
+    ]
+    const existing = { rows: { items: { 'ui:widget': 'updown' } } }
+    // structuredClone the input so we can check the return value independently
+    const result = mergeReadOnly(structuredClone(existing), fields)
+    // The existing items object must not be destroyed; injection is skipped with a warning
+    expect(result.rows?.['items']).toEqual({ 'ui:widget': 'updown' })
+  })
+
+  it('preserves existing items array when writing a uniform slot would conflict', () => {
+    const fields: FormulaField[] = [
+      { path: ['rows', ARRAY_INDEX, 'total'], formula: 'a * b', contextMode: 'siblings' },
+    ]
+    const existing = { rows: { items: [{ 'ui:widget': 'foo' }] } }
+    const result = mergeReadOnly(structuredClone(existing), fields)
+    // The existing items array must not be destroyed; injection is skipped with a warning
+    expect(Array.isArray(result.rows?.['items'])).toBe(true)
+    expect((result.rows?.['items'] as any[])[0]?.['ui:widget']).toBe('foo')
+  })
 })
