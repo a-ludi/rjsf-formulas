@@ -13,7 +13,7 @@
     }
   },
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && cp dist/index.d.mts dist/index.d.cts",
     "test": "vitest run",
     "prepare": "husky",
     "prepublishOnly": "bun run build && bunx publint"
