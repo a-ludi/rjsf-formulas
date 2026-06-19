@@ -40,3 +40,25 @@ describe('analyzeSchema — array items', () => {
     expect(result[0].path).toEqual(['items', ARRAY_INDEX, 'total'])
   })
 })
+
+describe('analyzeSchema — prefixItems and combined arrays', () => {
+  it('uses integer indices for prefixItems tuple slots', () => {
+    const result = analyzeSchema(fixtures.arrayWithPrefixItems as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['tuple', 2])
+    expect(result[0].formula).toBe('tuple[0] + tuple[1]')
+  })
+
+  it('handles both prefixItems and items in the same array', () => {
+    const result = analyzeSchema(fixtures.arrayWithBoth as any)
+    expect(result).toHaveLength(2)
+    expect(result[0].path).toEqual(['mixed', 1])
+    expect(result[1].path).toEqual(['mixed', ARRAY_INDEX, 'doubled'])
+  })
+
+  it('recurses into nested arrays', () => {
+    const result = analyzeSchema(fixtures.nestedArrays as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['matrix', ARRAY_INDEX, ARRAY_INDEX, 'doubled'])
+  })
+})
