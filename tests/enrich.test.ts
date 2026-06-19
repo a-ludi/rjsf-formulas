@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getAt, setAt, expandPaths, buildContext, ARRAY_INDEX } from '../src/enrich'
+import { getAt, setAt, expandPaths, ARRAY_INDEX } from '../src/enrich'
 
 describe('getAt', () => {
   it('retrieves a nested value', () => {
@@ -59,20 +59,6 @@ describe('expandPaths', () => {
       ['matrix', 1, 0, 'v'],
       ['matrix', 1, 1, 'v'],
     ])
-  })
-})
-
-describe('buildContext', () => {
-  it('returns sibling fields of the target', () => {
-    const data = { price: 10, quantity: 3, total: 0 }
-    const ctx = buildContext(data, ['total'])
-    expect(ctx).toEqual({ price: 10, quantity: 3, total: 0 })
-  })
-
-  it('returns siblings for a nested field', () => {
-    const data = { order: { price: 5, quantity: 2, total: 0 } }
-    const ctx = buildContext(data, ['order', 'total'])
-    expect(ctx).toEqual({ price: 5, quantity: 2, total: 0 })
   })
 })
 

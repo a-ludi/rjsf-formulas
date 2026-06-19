@@ -1,6 +1,8 @@
 import equal from 'fast-deep-equal'
 import type { FormulaField, ArrayIndex } from './analyzeSchema'
 import { ARRAY_INDEX } from './analyzeSchema'
+import { buildContext as buildContextFn } from './buildContext'
+import type { BuildContextOptions } from './buildContext'
 
 export { ARRAY_INDEX }
 
@@ -41,15 +43,6 @@ export function expandPaths(
   return expandPaths(rest, data, [...currentPath, head as string | number])
 }
 
-export function buildContext(data: unknown, path: (string | number)[]): object {
-  const parentPath = path.slice(0, -1)
-  const parent = getAt(data, parentPath)
-  if (parent != null && typeof parent === 'object' && !Array.isArray(parent)) {
-    return { ...(parent as object) }
-  }
-  return {}
-}
-
 export function deepEqual(a: unknown, b: unknown): boolean {
   return equal(a, b)
 }
@@ -58,14 +51,15 @@ function applyAllFormulas(
   formData: unknown,
   formulaFields: FormulaField[],
   evaluator: (formula: string, context: object) => unknown,
-  onFormulaError: ((path: (string | number)[], error: Error) => void) | undefined
+  onFormulaError: ((path: (string | number)[], error: Error) => void) | undefined,
+  contextOptions: BuildContextOptions
 ): unknown {
   const result = structuredClone(formData)
 
   for (const field of formulaFields) {
     for (const concretePath of expandPaths(field.path, result)) {
       try {
-        const context = buildContext(result, concretePath)
+        const context = buildContextFn(field, concretePath, result, contextOptions)
         const value = evaluator(field.formula, context)
         setAt(result, concretePath, value)
       } catch (err) {
@@ -101,25 +95,28 @@ export function enrich(
   formulaFields: FormulaField[],
   evaluator: (formula: string, context: object) => unknown,
   maxConvergencePasses: number,
-  onFormulaError: ((path: (string | number)[], error: Error) => void) | undefined
+  onFormulaError: ((path: (string | number)[], error: Error) => void) | undefined,
+  formulaDataKey = '__formData__',
+  formulaPathKey = '__path__'
 ): unknown {
   if (formulaFields.length === 0) return formData
 
+  const contextOptions: BuildContextOptions = { formulaDataKey, formulaPathKey }
   let current = formData
 
   for (let pass = 0; pass < maxConvergencePasses; pass++) {
     // Suppress error callbacks during intermediate passes; errors are reported only on the
     // final stable pass so each formula error fires at most once.
-    const candidate = applyAllFormulas(current, formulaFields, evaluator, undefined)
+    const candidate = applyAllFormulas(current, formulaFields, evaluator, undefined, contextOptions)
     if (allConverged(current, candidate, formulaFields)) {
       // Stable — run one final pass with error reporting to emit callbacks
-      return applyAllFormulas(current, formulaFields, evaluator, onFormulaError)
+      return applyAllFormulas(current, formulaFields, evaluator, onFormulaError, contextOptions)
     }
     current = candidate
   }
 
   // maxConvergencePasses exceeded — identify and report non-converging fields
-  const candidate = applyAllFormulas(current, formulaFields, evaluator, undefined)
+  const candidate = applyAllFormulas(current, formulaFields, evaluator, undefined, contextOptions)
   const result = structuredClone(candidate)
 
   for (const field of formulaFields) {
