@@ -62,3 +62,34 @@ describe('analyzeSchema — prefixItems and combined arrays', () => {
     expect(result[0].path).toEqual(['matrix', ARRAY_INDEX, ARRAY_INDEX, 'doubled'])
   })
 })
+
+describe('analyzeSchema — context modes', () => {
+  it('defaults to siblings when x-formula-context is absent', () => {
+    const result = analyzeSchema(fixtures.flatWithOneFormula as any)
+    expect(result[0].contextMode).toBe('siblings')
+  })
+
+  it('accepts explicit "siblings" context mode', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        a: { type: 'number' },
+        b: { type: 'number', 'x-formula': 'a', 'x-formula-context': 'siblings' },
+      },
+    }
+    expect(analyzeSchema(schema as any)[0].contextMode).toBe('siblings')
+  })
+
+  it('returns extended contextMode', () => {
+    const result = analyzeSchema(fixtures.extendedContextSchema as any)
+    expect(result[0].contextMode).toBe('extended')
+  })
+
+  it('treats unknown context as siblings and warns', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = analyzeSchema(fixtures.unknownContextSchema as any)
+    expect(result[0].contextMode).toBe('siblings')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid-mode'))
+    warnSpy.mockRestore()
+  })
+})
