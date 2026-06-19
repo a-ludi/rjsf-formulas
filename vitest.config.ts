@@ -36,6 +36,7 @@ export default defineConfig({
           name: 'rjsf-v5-react',
           include: ['tests/**/*.test.tsx'],
           environment: 'jsdom',
+          setupFiles: ['./tests/setup.rjsf-v5.ts'],
         },
         resolve: {
           alias: {
