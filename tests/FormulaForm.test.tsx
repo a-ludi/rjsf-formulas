@@ -245,3 +245,96 @@ describe('FormulaForm — error handling', () => {
     expect(onFormulaError).toHaveBeenCalledWith(['bad'], expect.any(Error))
   })
 })
+
+describe('FormulaForm — extended context', () => {
+  it('makes __formData__ available when x-formula-context is extended', () => {
+    const MockForm = vi.fn(() => <div />)
+    const schema = {
+      type: 'object',
+      properties: {
+        tax: { type: 'number' },
+        subtotal: { type: 'number' },
+        total: {
+          type: 'number',
+          'x-formula': '__formData__.tax + __formData__.subtotal',
+          'x-formula-context': 'extended',
+        },
+      },
+    }
+    render(
+      <FormulaForm
+        schema={schema as any}
+        formData={{ tax: 5, subtotal: 100, total: 0 }}
+        validator={validator}
+        evaluator={evalSimple}
+        onChange={vi.fn()}
+        Form={MockForm as any}
+      />
+    )
+    const received = MockForm.mock.calls[0][0].formData
+    expect(received.total).toBe(105)
+  })
+
+  it('uses custom formulaDataKey when provided', () => {
+    const MockForm = vi.fn(() => <div />)
+    const schema = {
+      type: 'object',
+      properties: {
+        tax: { type: 'number' },
+        subtotal: { type: 'number' },
+        total: {
+          type: 'number',
+          'x-formula': 'fd.tax + fd.subtotal',
+          'x-formula-context': 'extended',
+        },
+      },
+    }
+    render(
+      <FormulaForm
+        schema={schema as any}
+        formData={{ tax: 5, subtotal: 100, total: 0 }}
+        validator={validator}
+        evaluator={evalSimple}
+        onChange={vi.fn()}
+        formulaDataKey="fd"
+        Form={MockForm as any}
+      />
+    )
+    const received = MockForm.mock.calls[0][0].formData
+    expect(received.total).toBe(105)
+  })
+
+  it('uses custom formulaPathKey when provided', () => {
+    const MockForm = vi.fn(() => <div />)
+    const capturedContexts: object[] = []
+    const capturingEval = (formula: string, ctx: object) => {
+      capturedContexts.push(ctx)
+      return evalSimple(formula, ctx)
+    }
+    const schema = {
+      type: 'object',
+      properties: {
+        a: { type: 'number' },
+        b: {
+          type: 'number',
+          'x-formula': 'a * 2',
+          'x-formula-context': 'extended',
+        },
+      },
+    }
+    render(
+      <FormulaForm
+        schema={schema as any}
+        formData={{ a: 3, b: 0 }}
+        validator={validator}
+        evaluator={capturingEval}
+        onChange={vi.fn()}
+        formulaPathKey="myPath"
+        Form={MockForm as any}
+      />
+    )
+    const ctx = capturedContexts[0] as any
+    expect(ctx.myPath).toEqual(['b'])
+    expect(ctx.__path__).toBeUndefined()
+  })
+})

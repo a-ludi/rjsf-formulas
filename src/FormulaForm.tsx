@@ -15,6 +15,8 @@ export type FormulaFormProps<
   Form?: React.ComponentType<FormProps<T, S, F>>
   formulaKey?: string
   formulaContextKey?: string
+  formulaDataKey?: string
+  formulaPathKey?: string
   maxConvergencePasses?: number
   onFormulaError?: (path: (string | number)[], error: Error) => void
 }
@@ -32,6 +34,8 @@ export function FormulaForm<
     Form: InnerForm = Form as React.ComponentType<FormProps<T, S, F>>,
     formulaKey = 'x-formula',
     formulaContextKey = 'x-formula-context',
+    formulaDataKey = '__formData__',
+    formulaPathKey = '__path__',
     maxConvergencePasses = 10,
     onFormulaError,
     onChange,
@@ -44,11 +48,11 @@ export function FormulaForm<
   )
 
   const enrichedFormData = useMemo(
-    () => enrich(formData, formulaFields, evaluator, maxConvergencePasses, onFormulaError) as T,
+    () => enrich(formData, formulaFields, evaluator, maxConvergencePasses, onFormulaError, formulaDataKey, formulaPathKey) as T,
     // onFormulaError intentionally omitted: it is expected to be a stable reference (useCallback).
     // Including it would cause spurious re-enrichments when parents pass inline callbacks.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [formData, formulaFields, evaluator, maxConvergencePasses]
+    [formData, formulaFields, evaluator, maxConvergencePasses, formulaDataKey, formulaPathKey]
   )
 
   const mergedUiSchema = useMemo(
@@ -64,7 +68,7 @@ export function FormulaForm<
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (data: IChangeEvent<T, S, F>, id?: string) => {
-    const enriched = enrich(data.formData, formulaFields, evaluator, maxConvergencePasses, onFormulaError) as T
+    const enriched = enrich(data.formData, formulaFields, evaluator, maxConvergencePasses, onFormulaError, formulaDataKey, formulaPathKey) as T
     onChange?.({ ...data, formData: enriched }, id)
   }
 
