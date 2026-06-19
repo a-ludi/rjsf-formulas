@@ -241,6 +241,17 @@ Given `formData.items = [{ price: 10, quantity: 2 }, { price: 5, quantity: 4 }]`
 
 ---
 
+## Composite Schema Support
+
+Schema composition operators (`$ref`, `oneOf`, `anyOf`, `allOf`) are **not supported in v1**. `analyzeSchema` skips these nodes and emits a `console.warn` when it encounters them.
+
+Support is planned for a future release (issue 06). The key considerations are:
+
+- **`oneOf` / `anyOf` / `allOf`**: Recurse into all branches and collect formula descriptors from each. The evaluation layer already works against live `formData`, so which branch is active is handled naturally.
+- **`$ref`**: Requires a resolver. Adding support will introduce an optional `resolver` parameter to `analyzeSchema` — this must be designed to remain non-breaking for callers that do not use `$ref`.
+
+---
+
 ## Tooling
 
 | Concern | Choice |
