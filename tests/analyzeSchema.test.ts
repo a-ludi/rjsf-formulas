@@ -23,3 +23,12 @@ describe('analyzeSchema — flat objects', () => {
     expect(analyzeSchema(fixtures.noFormulas as any)).toEqual([])
   })
 })
+
+describe('analyzeSchema — nested objects', () => {
+  it('recurses into nested objects', () => {
+    const result = analyzeSchema(fixtures.nestedObject as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['order', 'total'])
+    expect(result[0].formula).toBe('price * quantity')
+  })
+})
