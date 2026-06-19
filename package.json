@@ -26,6 +26,7 @@
   "devDependencies": {
     "@rjsf/core": "^6",
     "@rjsf/utils": "^6",
+    "@rjsf/validator-ajv8": "^6",
     "rjsf-core-v5": "npm:@rjsf/core@^5",
     "rjsf-utils-v5": "npm:@rjsf/utils@^5",
     "vite": "^6",
