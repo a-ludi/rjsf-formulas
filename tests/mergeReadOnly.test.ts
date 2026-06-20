@@ -74,7 +74,7 @@ describe('mergeReadOnly', () => {
     const originalRef = original.total  // hold reference to nested object
     mergeReadOnly(original, fields)
     expect(original.total['ui:widget']).toBe('updown')
-    expect(original.total['ui:readonly']).toBeUndefined()  // must not be mutated
+    expect((original.total as Record<string, unknown>)['ui:readonly']).toBeUndefined()  // must not be mutated
     expect(original.total).toBe(originalRef)  // same object reference, not mutated
   })
 
@@ -86,7 +86,7 @@ describe('mergeReadOnly', () => {
     // structuredClone the input so we can check the return value independently
     const result = mergeReadOnly(structuredClone(existing), fields)
     // The existing items object must not be destroyed; injection is skipped with a warning
-    expect(result.rows?.['items']).toEqual({ 'ui:widget': 'updown' })
+    expect((result.rows as Record<string, unknown>)?.['items']).toEqual({ 'ui:widget': 'updown' })
   })
 
   it('preserves existing items array when writing a uniform slot would conflict', () => {
@@ -96,7 +96,7 @@ describe('mergeReadOnly', () => {
     const existing = { rows: { items: [{ 'ui:widget': 'foo' }] } }
     const result = mergeReadOnly(structuredClone(existing), fields)
     // The existing items array must not be destroyed; injection is skipped with a warning
-    expect(Array.isArray(result.rows?.['items'])).toBe(true)
-    expect((result.rows?.['items'] as any[])[0]?.['ui:widget']).toBe('foo')
+    expect(Array.isArray((result.rows as Record<string, unknown>)?.['items'])).toBe(true)
+    expect(((result.rows as Record<string, unknown>)?.['items'] as any[])[0]?.['ui:widget']).toBe('foo')
   })
 })

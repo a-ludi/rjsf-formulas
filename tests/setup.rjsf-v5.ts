@@ -1,6 +1,7 @@
 // Redirect CJS require('@rjsf/utils') → rjsf-utils-v5 so that rjsf-core-v5's
 // pre-compiled CJS bundle gets the correct v5 utils (Vitest's ESM aliases don't
 // intercept require() calls inside pre-compiled CJS bundles in node_modules).
+// @ts-ignore -- Node.js built-in; @types/node not installed
 import { createRequire } from 'module'
 
 const req = createRequire(import.meta.url)
@@ -10,7 +11,7 @@ const originalResolveFilename = Module._resolveFilename.bind(Module)
 
 Module._resolveFilename = (
   request: string,
-  parent: NodeModule,
+  parent: unknown,
   isMain: boolean,
   options: unknown
 ): string => {

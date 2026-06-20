@@ -25,7 +25,7 @@ afterEach(() => {
 describe('FormulaForm — mount', () => {
   it('renders inner form with enriched formData after debounce fires on mount', async () => {
     vi.useFakeTimers()
-    const MockForm = vi.fn(() => <div />)
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
     render(
       <FormulaForm
         schema={basic.schema as any}
@@ -165,7 +165,7 @@ describe('FormulaForm — custom Form prop', () => {
 describe('FormulaForm — read-only injection', () => {
   it('passes mergedUiSchema with ui:readonly on computed fields to the inner Form', async () => {
     vi.useFakeTimers()
-    const MockForm = vi.fn(() => <div />)
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
     const schema = {
       type: 'object',
       properties: {
@@ -189,7 +189,7 @@ describe('FormulaForm — read-only injection', () => {
 
   it('preserves user-supplied uiSchema entries alongside injected read-only', async () => {
     vi.useFakeTimers()
-    const MockForm = vi.fn(() => <div />)
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
     const schema = {
       type: 'object',
       properties: {
@@ -218,7 +218,7 @@ describe('FormulaForm — read-only injection', () => {
 describe('FormulaForm — nested objects', () => {
   it('enriches a computed field nested inside an object', async () => {
     vi.useFakeTimers()
-    const MockForm = vi.fn(() => <div />)
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
     render(
       <FormulaForm
         schema={nestedObject.schema as any}
@@ -238,7 +238,7 @@ describe('FormulaForm — nested objects', () => {
 describe('FormulaForm — custom keys', () => {
   it('uses a custom formulaKey to detect computed fields', async () => {
     vi.useFakeTimers()
-    const MockForm = vi.fn(() => <div />)
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
     render(
       <FormulaForm
         schema={customKey.schema as any}
@@ -259,7 +259,7 @@ describe('FormulaForm — custom keys', () => {
 describe('FormulaForm — error handling', () => {
   it('calls onFormulaError and sets field to undefined when evaluator throws', async () => {
     vi.useFakeTimers()
-    const MockForm = vi.fn(() => <div />)
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
     const onFormulaError = vi.fn()
     const brokenEval = (formula: string, ctx: object) => {
       if (formula === 'throw_error') throw new Error('boom')
@@ -287,7 +287,7 @@ describe('FormulaForm — error handling', () => {
 describe('FormulaForm — extended context', () => {
   it('makes __formData__ available when x-formula-context is extended', async () => {
     vi.useFakeTimers()
-    const MockForm = vi.fn(() => <div />)
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
     render(
       <FormulaForm
         schema={extendedContext.schema as any}
@@ -305,7 +305,7 @@ describe('FormulaForm — extended context', () => {
 
   it('uses custom formulaDataKey when provided', async () => {
     vi.useFakeTimers()
-    const MockForm = vi.fn(() => <div />)
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
     render(
       <FormulaForm
         schema={customFormulaDataKey.schema as any}

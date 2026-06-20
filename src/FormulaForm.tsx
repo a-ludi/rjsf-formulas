@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useRef } from 'react'
 import Form from '@rjsf/core'
-import type { FormProps, IChangeEvent, StrictRJSFSchema, RJSFSchema, FormContextType } from '@rjsf/utils'
+import type { FormProps, IChangeEvent } from '@rjsf/core'
+import type { StrictRJSFSchema, RJSFSchema, FormContextType } from '@rjsf/utils'
 import { analyzeSchema } from './analyzeSchema'
 import type { FormulaField } from './analyzeSchema'
 import { useAsyncFormulas } from './useAsyncFormulas'

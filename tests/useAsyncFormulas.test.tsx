@@ -200,7 +200,7 @@ describe('useAsyncFormulas — dirty state (in-flight re-evaluation)', () => {
   it('re-evaluates with latest input when handleInput fires during in-flight evaluation', async () => {
     vi.useFakeTimers()
 
-    let resolveFirstEval!: (v: unknown) => void
+    let resolveFirstEval!: () => void
     let evalCallCount = 0
 
     const controlledEval = vi.fn().mockImplementation((formula: string, ctx: object) => {
