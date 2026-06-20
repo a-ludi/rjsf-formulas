@@ -1,0 +1,13 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "entryPointStrategy": "resolve",
+  "plugin": ["typedoc-plugin-markdown"],
+  "out": "website/api",
+  "readme": "none",
+  "hidePageHeader": true,
+  "hideBreadcrumbs": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "gitRevision": "main",
+  "skipErrorChecking": true
+}

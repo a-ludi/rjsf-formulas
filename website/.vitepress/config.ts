@@ -8,7 +8,7 @@ export default defineConfig({
     nav: [
       { text: 'Quick Start', link: '/quick-start' },
       { text: 'Customization', link: '/customization' },
-      { text: 'API', link: '/api/' },
+      { text: 'API', link: '/api/README' },
       { text: 'Live Demo', link: 'https://a-ludi.github.io/rjsf-formulas/demo/' },
     ],
     sidebar: [
@@ -22,7 +22,7 @@ export default defineConfig({
       {
         text: 'API Reference',
         items: [
-          { text: 'Overview', link: '/api/' },
+          { text: 'Overview', link: '/api/README' },
         ],
       },
     ],

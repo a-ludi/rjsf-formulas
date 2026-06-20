@@ -1,3 +1,6 @@
 .obsidian/
 node_modules/
 dist/
+website/api/
+website/.vitepress/cache/
+*.tgz
