@@ -20,6 +20,7 @@
   },
   "scripts": {
     "build": "vite build && cp dist/index.d.mts dist/index.d.cts",
+    "dev": "vite --config demo/vite.config.ts",
     "test": "vitest run",
     "prepare": "husky",
     "prepublishOnly": "bun run build && bunx publint"
