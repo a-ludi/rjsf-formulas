@@ -57,6 +57,14 @@ export default function App() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+        <a href="https://a-ludi.github.io/rjsf-formulas/" target="_blank" rel="noopener noreferrer">
+          Documentation
+        </a>
+        <a href="https://github.com/a-ludi/rjsf-formulas" target="_blank" rel="noopener noreferrer">
+          GitHub
+        </a>
+      </div>
       <h1 style={{ marginTop: 0 }}>rjsf-formulas demo</h1>
 
       {/* Controls */}
