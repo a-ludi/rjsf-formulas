@@ -240,6 +240,67 @@ describe('useAsyncFormulas — dirty state (in-flight re-evaluation)', () => {
     expect(controlledEval).toHaveBeenCalledTimes(2)
     expect((result.current.enrichedFormData as any).total).toBe(20)
   })
+
+  it('does not publish the stale intermediate result when new input arrives during evaluation', async () => {
+    vi.useFakeTimers()
+
+    // evalCallCount tracks calls to the evaluator across ALL convergence passes.
+    // For initial data { price: 2, quantity: 3, total: 99 }, total starts at 99
+    // but price*quantity = 6, so pass 0 produces 6 (not converged), pass 1 repeats → 6 (converged).
+    // That means each full enrich() run calls the evaluator TWICE for this data.
+    //
+    // evalCallCount === 1 → pass 0 of run 1 (block here to simulate slow evaluator)
+    // evalCallCount === 3 → pass 0 of run 2 (block here to observe state before run 2 finishes)
+    let resolveFirstEval!: () => void
+    let resolveSecondRun!: () => void
+    let evalCallCount = 0
+
+    const controlledEval = vi.fn().mockImplementation((formula: string, ctx: object) => {
+      evalCallCount++
+      if (evalCallCount === 1) {
+        return new Promise<unknown>(res => { resolveFirstEval = () => res(evalSimple(formula, ctx)) })
+      }
+      if (evalCallCount === 3) {
+        return new Promise<unknown>(res => { resolveSecondRun = () => res(evalSimple(formula, ctx)) })
+      }
+      return Promise.resolve(evalSimple(formula, ctx))
+    })
+
+    const fields = [field(['total'], 'price * quantity')]
+    // total: 99 is intentionally wrong so the stale result (6) is visually distinct
+    const { result } = renderHook(() =>
+      useAsyncFormulas(
+        { price: 2, quantity: 3, total: 99 },
+        fields,
+        controlledEval,
+        300,
+        10,
+        undefined,
+        undefined,
+        ctxOpts
+      )
+    )
+
+    // Debounce fires; run 1 starts. Pass 0 blocks on evalCallCount === 1.
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect((result.current.enrichedFormData as any).total).toBe(99)
+
+    // New input arrives while run 1 is in-flight → fields go dirty
+    act(() => { result.current.handleInput({ price: 5, quantity: 4, total: 99 }) })
+
+    // Resolve run 1's blocked pass. This lets pass 1 of run 1 execute (immediate Promise.resolve),
+    // converge, then detect dirty and start run 2. Run 2's pass 0 blocks on evalCallCount === 3.
+    await act(async () => { resolveFirstEval() })
+
+    // KEY ASSERTION: enrichedFormData must NOT show the stale run-1 result (total: 6).
+    // It should retain the value from before the stale run (total: 99).
+    expect((result.current.enrichedFormData as any).total).toBe(99)
+
+    // Let run 2 complete — it produces the correct result.
+    await act(async () => { resolveSecondRun() })
+    await act(async () => { await Promise.resolve() })
+    expect((result.current.enrichedFormData as any).total).toBe(20)
+  })
 })
 
 describe('useAsyncFormulas — unmount during evaluation', () => {
