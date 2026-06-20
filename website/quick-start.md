@@ -3,6 +3,7 @@
 ## Prerequisites
 
 - An existing project using [RJSF](https://github.com/rjsf-team/react-jsonschema-form) (`@rjsf/core` ≥ 5 and `@rjsf/utils` ≥ 5).
+- An RJSF validator (e.g. `@rjsf/validator-ajv8`) installed separately.
 - React ≥ 17.
 
 ## Installation
