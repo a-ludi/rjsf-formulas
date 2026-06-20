@@ -1,22 +1,73 @@
 import type { RJSFSchema } from '@rjsf/utils'
 
-/** Package-internal — not re-exported from the public entry point. Used by enrich.ts and mergeReadOnly.ts. */
+/**
+ * Sentinel used in formula field paths to represent a uniform array item position.
+ * @internal
+ */
 export const ARRAY_INDEX: unique symbol = Symbol('arrayIndex')
+
+/** @internal */
 export type ArrayIndex = typeof ARRAY_INDEX
 
+/**
+ * Controls which values are injected into the formula evaluation context.
+ *
+ * - `'siblings'` (default): only the sibling fields of the computed field are available by name.
+ * - `'extended'`: the full form data and the field's resolved path are additionally injected
+ *   under the keys configured by `formulaDataKey` and `formulaPathKey`.
+ *
+ * Set via the `x-formula-context` schema key (or the `formulaContextKey` prop).
+ */
 export type ContextMode = 'siblings' | 'extended'
 
+/**
+ * Describes a single computed field discovered by {@link analyzeSchema}.
+ */
 export type FormulaField = {
+  /** JSON path to the field within the form data. Uniform array item positions are represented by {@link ARRAY_INDEX}. */
   path: (string | number | ArrayIndex)[]
+  /** The raw formula string from the schema. */
   formula: string
+  /** Which values are available when evaluating this field's formula. */
   contextMode: ContextMode
 }
 
+/**
+ * Options for {@link analyzeSchema}.
+ */
 export type AnalyzeSchemaOptions = {
+  /** Schema key that marks a field as computed. Defaults to `'x-formula'`. */
   formulaKey?: string
+  /** Schema key that selects the context mode for a computed field. Defaults to `'x-formula-context'`. */
   formulaContextKey?: string
 }
 
+/**
+ * Scans a JSON Schema and returns descriptors for every field that carries a formula key.
+ *
+ * @remarks
+ * Traversal is depth-first. Schema composition operators (`$ref`, `oneOf`, `anyOf`, `allOf`)
+ * are not supported and emit a `console.warn` when encountered.
+ *
+ * @param schema - The root RJSF schema to scan.
+ * @param options - Optional key overrides for locating formulas in the schema.
+ * @returns An array of {@link FormulaField} descriptors, one per computed field found.
+ *
+ * @example
+ * ```ts
+ * import { analyzeSchema } from '@a-ludi/rjsf-formulas'
+ *
+ * const fields = analyzeSchema({
+ *   type: 'object',
+ *   properties: {
+ *     price: { type: 'number' },
+ *     total: { type: 'number', 'x-formula': 'price * 2' },
+ *   },
+ * })
+ * // fields[0].path    → ['total']
+ * // fields[0].formula → 'price * 2'
+ * ```
+ */
 export function analyzeSchema(
   schema: RJSFSchema,
   options?: AnalyzeSchemaOptions
