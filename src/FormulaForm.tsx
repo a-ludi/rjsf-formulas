@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useEffect, useRef } from 'react'
 import Form from '@rjsf/core'
 import type { FormProps, IChangeEvent, StrictRJSFSchema, RJSFSchema, FormContextType } from '@rjsf/utils'
 import { analyzeSchema } from './analyzeSchema'
@@ -72,6 +72,14 @@ export function FormulaForm<
     onLoadingChange,
     contextOptions
   )
+
+  const onChangeRef = useRef(onChange)
+  useEffect(() => { onChangeRef.current = onChange }, [onChange])
+
+  useEffect(() => {
+    if (formulaFields.length === 0) return
+    onChangeRef.current?.({ formData: enrichedFormData as T } as IChangeEvent<T, S, F>, undefined)
+  }, [enrichedFormData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (data: IChangeEvent<T, S, F>, id?: string) => {
     handleInput(data.formData)

@@ -41,6 +41,27 @@ describe('FormulaForm — mount', () => {
     const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
     expect(lastCall[0].formData).toEqual({ price: 10, quantity: 3, total: 30 })
   })
+
+  it('calls onChange with enriched formData after initial evaluation', async () => {
+    vi.useFakeTimers()
+    const onChange = vi.fn()
+    render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        onChange={onChange}
+        Form={vi.fn(() => <div />) as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onChange).toHaveBeenCalledTimes(2)
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ formData: { price: 10, quantity: 3, total: 30 } }),
+      undefined
+    )
+  })
 })
 
 describe('FormulaForm — onChange', () => {
@@ -80,9 +101,13 @@ describe('FormulaForm — onChange', () => {
       undefined
     )
 
-    // Enriched value never reaches parent via onChange — only via inner form re-render
+    // Second onChange fires after debounce with enriched data
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
-    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledTimes(2)
+    expect(onChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ formData: { price: 5, quantity: 4, total: 20 } }),
+      undefined
+    )
   })
 
   it('inner form re-renders with enriched data after debounce following user edit', async () => {
