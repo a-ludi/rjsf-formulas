@@ -86,6 +86,10 @@ describe('FormulaForm — onChange', () => {
       expect.objectContaining({ formData: { price: 5, quantity: 4, total: 30 } }),
       undefined
     )
+
+    // Enriched value never reaches parent via onChange — only via inner form re-render
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onChange).toHaveBeenCalledTimes(1)
   })
 
   it('inner form re-renders with enriched data after debounce following user edit', async () => {

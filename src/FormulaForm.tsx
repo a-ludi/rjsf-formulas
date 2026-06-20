@@ -75,7 +75,7 @@ export function FormulaForm<
 
   const handleChange = (data: IChangeEvent<T, S, F>, id?: string) => {
     handleInput(data.formData)
-    onChange?.({ ...data, formData: data.formData as T }, id)
+    onChange?.(data, id)
   }
 
   return (
