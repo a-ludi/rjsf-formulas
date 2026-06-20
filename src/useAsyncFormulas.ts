@@ -49,47 +49,51 @@ export function useAsyncFormulas(
     const run = async () => {
       runningRef.current = true
 
-      while (true) {
-        const input = pendingInputRef.current
-        const fields = formulaFieldsRef.current
+      try {
+        while (true) {
+          const input = pendingInputRef.current
+          const fields = formulaFieldsRef.current
 
-        // Collect concrete paths for loading reporting
-        const concretePaths: (string | number)[][] = []
-        for (const field of fields) {
-          for (const cp of expandPaths(field.path, input)) {
-            concretePaths.push(cp)
+          // Collect concrete paths for loading reporting
+          const concretePaths: (string | number)[][] = []
+          for (const field of fields) {
+            for (const cp of expandPaths(field.path, input)) {
+              concretePaths.push(cp)
+            }
           }
+
+          // Mark all fields running
+          const stateMap = fieldStateRef.current
+          stateMap.clear()
+          for (const cp of concretePaths) stateMap.set(pathKey(cp), 'running')
+          if (concretePaths.length > 0) onLoadingChangeRef.current?.(concretePaths)
+
+          const result = await enrich(
+            input,
+            fields,
+            evaluatorRef.current,
+            maxPassesRef.current,
+            onFormulaErrorRef.current,
+            contextOptionsRef.current.formulaDataKey,
+            contextOptionsRef.current.formulaPathKey
+          )
+
+          if (isUnmountedRef.current) break
+
+          const anyDirty = [...stateMap.values()].some(s => s === 'dirty')
+          stateMap.clear()
+
+          setEnrichedFormData(result)
+
+          if (!anyDirty) {
+            if (concretePaths.length > 0) onLoadingChangeRef.current?.([])
+            break
+          }
+          // New input arrived while evaluating — re-run with pendingInputRef.current
         }
-
-        // Mark all fields running
-        const stateMap = fieldStateRef.current
-        stateMap.clear()
-        for (const cp of concretePaths) stateMap.set(pathKey(cp), 'running')
-        if (concretePaths.length > 0) onLoadingChangeRef.current?.(concretePaths)
-
-        const result = await enrich(
-          input,
-          fields,
-          evaluatorRef.current,
-          maxPassesRef.current,
-          onFormulaErrorRef.current,
-          contextOptionsRef.current.formulaDataKey,
-          contextOptionsRef.current.formulaPathKey
-        )
-
-        const anyDirty = [...stateMap.values()].some(s => s === 'dirty')
-        stateMap.clear()
-
-        setEnrichedFormData(result)
-
-        if (!anyDirty) {
-          if (concretePaths.length > 0) onLoadingChangeRef.current?.([])
-          break
-        }
-        // New input arrived while evaluating — re-run with pendingInputRef.current
+      } finally {
+        runningRef.current = false
       }
-
-      runningRef.current = false
     }
 
     run()
@@ -122,11 +126,12 @@ export function useAsyncFormulas(
   // We use a no-dependency effect that runs every render but guards with deep equality
   // to avoid spurious re-evaluations when the parent re-renders with a new object
   // reference but the same value. On first render this always fires (initialises evaluation).
-  const isMountedRef = useRef(false)
+  const hasMountedRef = useRef(false)
+  const isUnmountedRef = useRef(false)
   useEffect(() => {
-    if (!isMountedRef.current) {
+    if (!hasMountedRef.current) {
       // Initial mount: always trigger evaluation
-      isMountedRef.current = true
+      hasMountedRef.current = true
       lastExternalFormDataRef.current = formData
       handleInput(formData)
     } else if (!deepEqual(formData, lastExternalFormDataRef.current)) {
@@ -139,6 +144,7 @@ export function useAsyncFormulas(
   // Cleanup debounce on unmount
   useEffect(
     () => () => {
+      isUnmountedRef.current = true
       if (debounceTimerRef.current !== null) clearTimeout(debounceTimerRef.current)
     },
     []
