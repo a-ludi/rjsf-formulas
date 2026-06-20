@@ -4,6 +4,7 @@
   "plugin": ["typedoc-plugin-markdown"],
   "out": "website/api",
   "readme": "none",
+  "entryFileName": "index",
   "hidePageHeader": true,
   "hideBreadcrumbs": true,
   "excludePrivate": true,
