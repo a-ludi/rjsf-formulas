@@ -23,10 +23,17 @@ export function buildContext(
       : {}
 
   if (field.contextMode === 'extended') {
+    if (options.formulaDataKey in siblings || options.formulaPathKey in siblings) {
+      console.warn(
+        `[rjsf-formulas] Extended context key collision: sibling field named "${
+          options.formulaDataKey in siblings ? options.formulaDataKey : options.formulaPathKey
+        }" will be overwritten by the injected context. Use formulaDataKey/formulaPathKey props to choose a different key.`
+      )
+    }
     return {
       ...siblings,
       [options.formulaDataKey]: candidateFormData,
-      [options.formulaPathKey]: resolvedPath,
+      [options.formulaPathKey]: [...resolvedPath],
     }
   }
 

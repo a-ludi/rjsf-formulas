@@ -1,7 +1,7 @@
 import equal from 'fast-deep-equal'
 import type { FormulaField, ArrayIndex } from './analyzeSchema'
 import { ARRAY_INDEX } from './analyzeSchema'
-import { buildContext as buildContextFn } from './buildContext'
+import { buildContext } from './buildContext'
 import type { BuildContextOptions } from './buildContext'
 
 export { ARRAY_INDEX }
@@ -59,7 +59,7 @@ function applyAllFormulas(
   for (const field of formulaFields) {
     for (const concretePath of expandPaths(field.path, result)) {
       try {
-        const context = buildContextFn(field, concretePath, result, contextOptions)
+        const context = buildContext(field, concretePath, result, contextOptions)
         const value = evaluator(field.formula, context)
         setAt(result, concretePath, value)
       } catch (err) {
