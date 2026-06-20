@@ -7,23 +7,120 @@ import { useAsyncFormulas } from './useAsyncFormulas'
 import { mergeReadOnly } from './mergeReadOnly'
 import type { BuildContextOptions } from './buildContext'
 
+/**
+ * Props accepted by {@link FormulaForm}.
+ *
+ * Extends all standard RJSF `FormProps` with formula-specific configuration.
+ * All formula-specific props are optional except `evaluator`.
+ */
 export type FormulaFormProps<
   T = any,
   S extends StrictRJSFSchema = RJSFSchema,
   F extends FormContextType = any
 > = FormProps<T, S, F> & {
+  /**
+   * Evaluates a formula string against a context object and returns the computed value.
+   *
+   * @remarks
+   * May return a plain value or a `Promise`. For user-supplied formulas, **do not use `eval`**
+   * — it allows arbitrary code execution. Prefer a sandboxed evaluator such as
+   * [`expr-eval`](https://github.com/silentmatt/expr-eval) or
+   * [`mathjs`](https://mathjs.org/), or run evaluation in a Web Worker.
+   *
+   * @param formula - The formula string from the schema.
+   * @param context - Sibling field values, or full form data in extended mode.
+   * @returns The computed value, or a Promise resolving to it.
+   */
   evaluator: (formula: string, context: object) => unknown | Promise<unknown>
+
+  /**
+   * Inner RJSF `Form` component to render.
+   * Defaults to `Form` from `@rjsf/core`. Swap to use a themed form
+   * (e.g. `Form` from `@rjsf/bootstrap-4`).
+   */
   Form?: React.ComponentType<FormProps<T, S, F>>
+
+  /** Schema key that marks a field as computed. Defaults to `'x-formula'`. */
   formulaKey?: string
+
+  /** Schema key that selects the context mode for a field. Defaults to `'x-formula-context'`. */
   formulaContextKey?: string
+
+  /**
+   * Key injected into the extended context carrying the full form data.
+   * Defaults to `'__formData__'`. Override if a sibling field uses the same name.
+   */
   formulaDataKey?: string
+
+  /**
+   * Key injected into the extended context carrying the field's resolved path.
+   * Defaults to `'__path__'`. Override if a sibling field uses the same name.
+   */
   formulaPathKey?: string
+
+  /**
+   * Maximum number of re-evaluation passes triggered by a single input event.
+   * Guards against infinite loops from circular formula dependencies. Defaults to `10`.
+   */
   maxConvergencePasses?: number
+
+  /**
+   * Milliseconds to debounce formula evaluation after a user input event. Defaults to `300`.
+   * Set to `0` to evaluate synchronously (only safe with synchronous evaluators).
+   */
   debounceMs?: number
+
+  /**
+   * Called when a formula throws during evaluation.
+   * @param path - JSON path of the field whose formula failed.
+   * @param error - The error thrown by the evaluator.
+   */
   onFormulaError?: (path: (string | number)[], error: Error) => void
+
+  /**
+   * Called whenever the set of currently-evaluating fields changes.
+   * Useful for showing per-field loading indicators.
+   * @param loadingPaths - Paths of all fields whose evaluations are in progress.
+   */
   onLoadingChange?: (loadingPaths: (string | number)[][]) => void
 }
 
+/**
+ * Drop-in replacement for RJSF's `<Form>` with support for computed fields.
+ *
+ * @remarks
+ * Fields marked with a formula key in the JSON schema are evaluated automatically
+ * on every data change and rendered as read-only. The `evaluator` prop receives
+ * the formula string and a context object, and returns the computed value.
+ *
+ * @example
+ * ```tsx
+ * import { FormulaForm } from '@a-ludi/rjsf-formulas'
+ * import validator from '@rjsf/validator-ajv8'
+ * import { Parser } from 'expr-eval'
+ *
+ * const parser = new Parser()
+ *
+ * const schema = {
+ *   type: 'object' as const,
+ *   properties: {
+ *     price:    { type: 'number' as const },
+ *     quantity: { type: 'number' as const },
+ *     total:    { type: 'number' as const, 'x-formula': 'price * quantity' },
+ *   },
+ * }
+ *
+ * function MyForm() {
+ *   return (
+ *     <FormulaForm
+ *       schema={schema}
+ *       validator={validator}
+ *       evaluator={(formula, ctx) => parser.evaluate(formula, ctx)}
+ *     />
+ *   )
+ * }
+ * ```
+ */
 export function FormulaForm<
   T = any,
   S extends StrictRJSFSchema = RJSFSchema,
