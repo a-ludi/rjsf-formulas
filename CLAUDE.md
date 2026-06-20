@@ -30,6 +30,10 @@ Default label strings are used (needs-triage, needs-info, ready-for-agent, ready
 
 Single-context repo — one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+## CHANGELOG
+
+Maintain `CHANGELOG.md` manually, following the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format (Unreleased section at top, semantic versioning, grouped by Added/Changed/Deprecated/Removed/Fixed/Security).
+
 ## Key Design Decisions Still Open
 
 - How to hook into RJSF's rendering lifecycle (custom widget? form wrapper? `transformErrors`?).
