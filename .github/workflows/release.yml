@@ -70,10 +70,12 @@ jobs:
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTES: ${{ steps.notes.outputs.NOTES }}
         run: |
+          printf '%s' "$NOTES" > /tmp/release-notes.txt
           gh release create "${GITHUB_REF#refs/tags/}" \
             --title "${GITHUB_REF#refs/tags/}" \
-            --notes "${{ steps.notes.outputs.NOTES }}"
+            --notes-file /tmp/release-notes.txt
 
   deploy:
     needs: publish
@@ -81,6 +83,7 @@ jobs:
     permissions:
       pages: write
       id-token: write
+      contents: read
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
