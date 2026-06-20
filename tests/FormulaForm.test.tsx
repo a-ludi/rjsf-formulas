@@ -4,6 +4,15 @@ import React from 'react'
 import Form from '@rjsf/core'
 import validator from '@rjsf/validator-ajv8'
 import { FormulaForm } from '../src/FormulaForm'
+import {
+  basic,
+  nestedObject,
+  extendedContext,
+  customFormulaDataKey,
+  customFormulaPathKey,
+  customKey,
+  errorHandling,
+} from './schemas'
 
 const evalSimple = (formula: string, ctx: object) =>
   new Function(...Object.keys(ctx), `return ${formula}`)(...Object.values(ctx))
@@ -17,18 +26,10 @@ describe('FormulaForm — mount', () => {
   it('renders inner form with enriched formData after debounce fires on mount', async () => {
     vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
-    const schema = {
-      type: 'object',
-      properties: {
-        price: { type: 'number' },
-        quantity: { type: 'number' },
-        total: { type: 'number', 'x-formula': 'price * quantity' },
-      },
-    }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ price: 10, quantity: 3, total: 0 }}
+        schema={basic.schema as any}
+        formData={basic.formData as any}
         validator={validator}
         evaluator={evalSimple}
         Form={MockForm as any}
@@ -46,14 +47,6 @@ describe('FormulaForm — onChange', () => {
   it('fires onChange immediately with raw data on user edit', async () => {
     vi.useFakeTimers()
     const onChange = vi.fn()
-    const schema = {
-      type: 'object',
-      properties: {
-        price: { type: 'number' },
-        quantity: { type: 'number' },
-        total: { type: 'number', 'x-formula': 'price * quantity' },
-      },
-    }
 
     const MockForm = vi.fn(({ onChange: innerOnChange }: any) => (
       <button
@@ -65,8 +58,8 @@ describe('FormulaForm — onChange', () => {
 
     const { getByText } = render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ price: 10, quantity: 3, total: 0 }}
+        schema={basic.schema as any}
+        formData={basic.formData as any}
         validator={validator}
         evaluator={evalSimple}
         onChange={onChange}
@@ -94,14 +87,6 @@ describe('FormulaForm — onChange', () => {
 
   it('inner form re-renders with enriched data after debounce following user edit', async () => {
     vi.useFakeTimers()
-    const schema = {
-      type: 'object',
-      properties: {
-        price: { type: 'number' },
-        quantity: { type: 'number' },
-        total: { type: 'number', 'x-formula': 'price * quantity' },
-      },
-    }
 
     const MockForm = vi.fn(({ onChange: innerOnChange }: any) => (
       <button
@@ -113,8 +98,8 @@ describe('FormulaForm — onChange', () => {
 
     const { getByText } = render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ price: 10, quantity: 3, total: 0 }}
+        schema={basic.schema as any}
+        formData={basic.formData as any}
         validator={validator}
         evaluator={evalSimple}
         Form={MockForm as any}
@@ -209,23 +194,10 @@ describe('FormulaForm — nested objects', () => {
   it('enriches a computed field nested inside an object', async () => {
     vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
-    const schema = {
-      type: 'object',
-      properties: {
-        order: {
-          type: 'object',
-          properties: {
-            price: { type: 'number' },
-            quantity: { type: 'number' },
-            total: { type: 'number', 'x-formula': 'price * quantity' },
-          },
-        },
-      },
-    }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ order: { price: 4, quantity: 5, total: 0 } }}
+        schema={nestedObject.schema as any}
+        formData={nestedObject.formData as any}
         validator={validator}
         evaluator={evalSimple}
         onChange={vi.fn()}
@@ -242,21 +214,14 @@ describe('FormulaForm — custom keys', () => {
   it('uses a custom formulaKey to detect computed fields', async () => {
     vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
-    const schema = {
-      type: 'object',
-      properties: {
-        a: { type: 'number' },
-        b: { type: 'number', 'x-calc': 'a * 3' },
-      },
-    }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ a: 4, b: 0 }}
+        schema={customKey.schema as any}
+        formData={customKey.formData as any}
         validator={validator}
         evaluator={evalSimple}
         onChange={vi.fn()}
-        formulaKey="x-calc"
+        formulaKey={customKey.formulaKey}
         Form={MockForm as any}
       />
     )
@@ -271,22 +236,14 @@ describe('FormulaForm — error handling', () => {
     vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
     const onFormulaError = vi.fn()
-    const schema = {
-      type: 'object',
-      properties: {
-        a: { type: 'number' },
-        bad: { type: 'number', 'x-formula': 'throw_error' },
-        good: { type: 'number', 'x-formula': 'a + 1' },
-      },
-    }
     const brokenEval = (formula: string, ctx: object) => {
       if (formula === 'throw_error') throw new Error('boom')
       return evalSimple(formula, ctx)
     }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ a: 5, bad: 0, good: 0 }}
+        schema={errorHandling.schema as any}
+        formData={errorHandling.formData as any}
         validator={validator}
         evaluator={brokenEval}
         onChange={vi.fn()}
@@ -306,22 +263,10 @@ describe('FormulaForm — extended context', () => {
   it('makes __formData__ available when x-formula-context is extended', async () => {
     vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
-    const schema = {
-      type: 'object',
-      properties: {
-        tax: { type: 'number' },
-        subtotal: { type: 'number' },
-        total: {
-          type: 'number',
-          'x-formula': '__formData__.tax + __formData__.subtotal',
-          'x-formula-context': 'extended',
-        },
-      },
-    }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ tax: 5, subtotal: 100, total: 0 }}
+        schema={extendedContext.schema as any}
+        formData={extendedContext.formData as any}
         validator={validator}
         evaluator={evalSimple}
         onChange={vi.fn()}
@@ -336,26 +281,14 @@ describe('FormulaForm — extended context', () => {
   it('uses custom formulaDataKey when provided', async () => {
     vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
-    const schema = {
-      type: 'object',
-      properties: {
-        tax: { type: 'number' },
-        subtotal: { type: 'number' },
-        total: {
-          type: 'number',
-          'x-formula': 'fd.tax + fd.subtotal',
-          'x-formula-context': 'extended',
-        },
-      },
-    }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ tax: 5, subtotal: 100, total: 0 }}
+        schema={customFormulaDataKey.schema as any}
+        formData={customFormulaDataKey.formData as any}
         validator={validator}
         evaluator={evalSimple}
         onChange={vi.fn()}
-        formulaDataKey="fd"
+        formulaDataKey={customFormulaDataKey.formulaDataKey}
         Form={MockForm as any}
       />
     )
@@ -372,25 +305,14 @@ describe('FormulaForm — extended context', () => {
       capturedContexts.push(ctx)
       return evalSimple(formula, ctx)
     }
-    const schema = {
-      type: 'object',
-      properties: {
-        a: { type: 'number' },
-        b: {
-          type: 'number',
-          'x-formula': 'a * 2',
-          'x-formula-context': 'extended',
-        },
-      },
-    }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ a: 3, b: 0 }}
+        schema={customFormulaPathKey.schema as any}
+        formData={customFormulaPathKey.formData as any}
         validator={validator}
         evaluator={capturingEval}
         onChange={vi.fn()}
-        formulaPathKey="myPath"
+        formulaPathKey={customFormulaPathKey.formulaPathKey}
         Form={MockForm as any}
       />
     )
