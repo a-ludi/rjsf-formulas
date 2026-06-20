@@ -292,6 +292,9 @@ describe('useAsyncFormulas — dirty state (in-flight re-evaluation)', () => {
     // converge, then detect dirty and start run 2. Run 2's pass 0 blocks on evalCallCount === 3.
     await act(async () => { resolveFirstEval() })
 
+    // Confirm run 2 has actually started (not just that React hasn't flushed yet)
+    expect(controlledEval).toHaveBeenCalledTimes(3)
+
     // KEY ASSERTION: enrichedFormData must NOT show the stale run-1 result (total: 6).
     // It should retain the value from before the stale run (total: 99).
     expect((result.current.enrichedFormData as any).total).toBe(99)
