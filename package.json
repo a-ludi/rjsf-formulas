@@ -35,7 +35,7 @@
     "build:demo": "vite build --config demo/vite.config.ts",
     "dev": "vite --config demo/vite.config.ts",
     "test": "vitest run",
-    "prepare": "husky",
+    "prepare": "bunx husky",
     "prepublishOnly": "bun run build && bunx publint"
   },
   "peerDependencies": {
