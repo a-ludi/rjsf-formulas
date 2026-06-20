@@ -25,7 +25,7 @@ export type FormulaFormProps<
    * May return a plain value or a `Promise`. For user-supplied formulas, **do not use `eval`**
    * — it allows arbitrary code execution. Prefer a sandboxed evaluator such as
    * [`expr-eval`](https://github.com/silentmatt/expr-eval) or
-   * [`mathjs`](https://mathjs.org/), or run evaluation in a Web Worker.
+   * [`mathjs`](https://mathjs.org/). For additional isolation, run the evaluator in a Web Worker.
    *
    * @param formula - The formula string from the schema.
    * @param context - Sibling field values, or full form data in extended mode.
@@ -66,7 +66,7 @@ export type FormulaFormProps<
 
   /**
    * Milliseconds to debounce formula evaluation after a user input event. Defaults to `300`.
-   * Set to `0` to evaluate synchronously (only safe with synchronous evaluators).
+   * Set to `0` to disable the debounce delay and evaluate on the next event loop tick.
    */
   debounceMs?: number
 

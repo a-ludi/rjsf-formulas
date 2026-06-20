@@ -16,7 +16,7 @@
  * <FormulaForm
  *   schema={schema}
  *   validator={validator}
- *   evaluator={(formula, ctx) => \/* your evaluator *\/ undefined}
+ *   evaluator={(formula, ctx) => myEvaluator(formula, ctx)}
  * />
  * ```
  */

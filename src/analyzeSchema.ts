@@ -13,8 +13,8 @@ export type ArrayIndex = typeof ARRAY_INDEX
  * Controls which values are injected into the formula evaluation context.
  *
  * - `'siblings'` (default): only the sibling fields of the computed field are available by name.
- * - `'extended'`: the full form data and the field's resolved path are additionally injected
- *   under the keys configured by `formulaDataKey` and `formulaPathKey`.
+ * - `'extended'`: full form data and the field's resolved path are injected alongside sibling
+ *   values, under the keys configured by `formulaDataKey` and `formulaPathKey`.
  *
  * Set via the `x-formula-context` schema key (or the `formulaContextKey` prop).
  */
@@ -64,8 +64,8 @@ export type AnalyzeSchemaOptions = {
  *     total: { type: 'number', 'x-formula': 'price * 2' },
  *   },
  * })
- * // fields[0].path    → ['total']
- * // fields[0].formula → 'price * 2'
+ * // fields[0].path    => ['total']
+ * // fields[0].formula => 'price * 2'
  * ```
  */
 export function analyzeSchema(
