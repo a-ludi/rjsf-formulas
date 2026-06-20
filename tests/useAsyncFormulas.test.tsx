@@ -242,6 +242,46 @@ describe('useAsyncFormulas — dirty state (in-flight re-evaluation)', () => {
   })
 })
 
+describe('useAsyncFormulas — unmount during evaluation', () => {
+  it('does not call setEnrichedFormData or onLoadingChange after unmount', async () => {
+    vi.useFakeTimers()
+
+    let resolveEval!: () => void
+    const blockingEval = vi.fn().mockImplementation((formula: string, ctx: object) =>
+      new Promise<unknown>(res => { resolveEval = () => res(evalSimple(formula, ctx)) })
+    )
+    const onLoadingChange = vi.fn()
+    const fields = [field(['total'], 'price * quantity')]
+
+    const { unmount } = renderHook(() =>
+      useAsyncFormulas(
+        { price: 2, quantity: 3, total: 6 },
+        fields,
+        blockingEval,
+        300,
+        10,
+        undefined,
+        onLoadingChange,
+        ctxOpts
+      )
+    )
+
+    // Debounce fires, evaluation starts (blocked)
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onLoadingChange).toHaveBeenCalledWith([['total']])
+    onLoadingChange.mockClear()
+
+    // Unmount while evaluation is in-flight
+    unmount()
+
+    // Resolve the blocked evaluator
+    await act(async () => { resolveEval() })
+
+    // onLoadingChange([]) must not be called after unmount
+    expect(onLoadingChange).not.toHaveBeenCalled()
+  })
+})
+
 describe('useAsyncFormulas — convergence limit', () => {
   it('reports non-converging formulas via onFormulaError after maxConvergencePasses', async () => {
     vi.useFakeTimers()
