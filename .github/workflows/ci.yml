@@ -23,8 +23,3 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run test
 
-  ci:
-    needs: [typecheck, test]
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "CI passed"
