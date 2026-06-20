@@ -132,7 +132,13 @@ const evaluator = useCallback(
 
 ### Error handling in demo
 
-`onFormulaError` is wired up in the demo but only used to let `FormulaForm` handle it internally (sets the field to `undefined`). No separate error display is needed — the broken field simply shows as `undefined` in the JSON output and the RJSF form.
+`onFormulaError` logs each error to the browser console:
+
+```ts
+onFormulaError={(path, error) => console.error(`[formula error] ${path.join('.')}:`, error)}
+```
+
+The broken field shows as `undefined` in the JSON output and the RJSF form. Opening DevTools → Console lets you inspect the full error while exercising the error-handling schema.
 
 ## Testing
 
