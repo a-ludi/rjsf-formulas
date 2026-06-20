@@ -1,17 +1,22 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, act } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, act, cleanup } from '@testing-library/react'
 import React from 'react'
 import Form from '@rjsf/core'
 import validator from '@rjsf/validator-ajv8'
 import { FormulaForm } from '../src/FormulaForm'
 
-// Safe eval for tests only
 const evalSimple = (formula: string, ctx: object) =>
   new Function(...Object.keys(ctx), `return ${formula}`)(...Object.values(ctx))
 
+afterEach(() => {
+  cleanup()
+  vi.useRealTimers()
+})
+
 describe('FormulaForm — mount', () => {
-  it('fires parent onChange with enriched formData on mount', () => {
-    const onChange = vi.fn()
+  it('renders inner form with enriched formData after debounce fires on mount', async () => {
+    vi.useFakeTimers()
+    const MockForm = vi.fn(() => <div />)
     const schema = {
       type: 'object',
       properties: {
@@ -20,26 +25,26 @@ describe('FormulaForm — mount', () => {
         total: { type: 'number', 'x-formula': 'price * quantity' },
       },
     }
-    act(() => {
-      render(
-        <FormulaForm
-          schema={schema as any}
-          formData={{ price: 10, quantity: 3, total: 0 }}
-          validator={validator}
-          evaluator={evalSimple}
-          onChange={onChange}
-        />
-      )
-    })
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ formData: { price: 10, quantity: 3, total: 30 } }),
-      undefined
+    render(
+      <FormulaForm
+        schema={schema as any}
+        formData={{ price: 10, quantity: 3, total: 0 }}
+        validator={validator}
+        evaluator={evalSimple}
+        Form={MockForm as any}
+      />
     )
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData).toEqual({ price: 10, quantity: 3, total: 30 })
   })
 })
 
 describe('FormulaForm — onChange', () => {
-  it('passes enriched formData to parent onChange on user edit', async () => {
+  it('fires onChange immediately with raw data on user edit', async () => {
+    vi.useFakeTimers()
     const onChange = vi.fn()
     const schema = {
       type: 'object',
@@ -50,18 +55,13 @@ describe('FormulaForm — onChange', () => {
       },
     }
 
-    // Use a mock inner Form to simulate an onChange call
-    const MockForm = vi.fn(({ onChange: innerOnChange }: any) => {
-      return (
-        <button
-          onClick={() =>
-            innerOnChange({ formData: { price: 5, quantity: 4, total: 0 } })
-          }
-        >
-          change
-        </button>
-      )
-    })
+    const MockForm = vi.fn(({ onChange: innerOnChange }: any) => (
+      <button
+        onClick={() => innerOnChange({ formData: { price: 5, quantity: 4, total: 30 } })}
+      >
+        change
+      </button>
+    ))
 
     const { getByText } = render(
       <FormulaForm
@@ -74,19 +74,63 @@ describe('FormulaForm — onChange', () => {
       />
     )
 
-    act(() => {
-      getByText('change').click()
-    })
+    // Let mount evaluation complete
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    onChange.mockClear()
 
-    expect(onChange).toHaveBeenLastCalledWith(
-      expect.objectContaining({ formData: { price: 5, quantity: 4, total: 20 } }),
+    // User edits a field
+    act(() => { getByText('change').click() })
+
+    // onChange fires immediately with the raw data from RJSF
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ formData: { price: 5, quantity: 4, total: 30 } }),
       undefined
     )
+  })
+
+  it('inner form re-renders with enriched data after debounce following user edit', async () => {
+    vi.useFakeTimers()
+    const schema = {
+      type: 'object',
+      properties: {
+        price: { type: 'number' },
+        quantity: { type: 'number' },
+        total: { type: 'number', 'x-formula': 'price * quantity' },
+      },
+    }
+
+    const MockForm = vi.fn(({ onChange: innerOnChange }: any) => (
+      <button
+        onClick={() => innerOnChange({ formData: { price: 5, quantity: 4, total: 30 } })}
+      >
+        change
+      </button>
+    ))
+
+    const { getByText } = render(
+      <FormulaForm
+        schema={schema as any}
+        formData={{ price: 10, quantity: 3, total: 0 }}
+        validator={validator}
+        evaluator={evalSimple}
+        Form={MockForm as any}
+      />
+    )
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+
+    act(() => { getByText('change').click() })
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData).toEqual({ price: 5, quantity: 4, total: 20 })
   })
 })
 
 describe('FormulaForm — custom Form prop', () => {
-  it('renders a custom Form component when provided', () => {
+  it('renders a custom Form component when provided', async () => {
+    vi.useFakeTimers()
     const MockForm = vi.fn(() => <div data-testid="custom-form" />)
     const schema = { type: 'object', properties: {} }
     const { getByTestId } = render(
@@ -105,7 +149,8 @@ describe('FormulaForm — custom Form prop', () => {
 })
 
 describe('FormulaForm — read-only injection', () => {
-  it('passes mergedUiSchema with ui:readonly on computed fields to the inner Form', () => {
+  it('passes mergedUiSchema with ui:readonly on computed fields to the inner Form', async () => {
+    vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
     const schema = {
       type: 'object',
@@ -128,7 +173,8 @@ describe('FormulaForm — read-only injection', () => {
     expect(receivedUiSchema?.total?.['ui:readonly']).toBe(true)
   })
 
-  it('preserves user-supplied uiSchema entries alongside injected read-only', () => {
+  it('preserves user-supplied uiSchema entries alongside injected read-only', async () => {
+    vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
     const schema = {
       type: 'object',
@@ -156,7 +202,8 @@ describe('FormulaForm — read-only injection', () => {
 })
 
 describe('FormulaForm — nested objects', () => {
-  it('enriches a computed field nested inside an object', () => {
+  it('enriches a computed field nested inside an object', async () => {
+    vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
     const schema = {
       type: 'object',
@@ -181,13 +228,15 @@ describe('FormulaForm — nested objects', () => {
         Form={MockForm as any}
       />
     )
-    const received = MockForm.mock.calls[0][0].formData
-    expect(received.order.total).toBe(20)
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData.order.total).toBe(20)
   })
 })
 
 describe('FormulaForm — custom keys', () => {
-  it('uses a custom formulaKey to detect computed fields', () => {
+  it('uses a custom formulaKey to detect computed fields', async () => {
+    vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
     const schema = {
       type: 'object',
@@ -207,13 +256,15 @@ describe('FormulaForm — custom keys', () => {
         Form={MockForm as any}
       />
     )
-    const received = MockForm.mock.calls[0][0].formData
-    expect(received.b).toBe(12)
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData.b).toBe(12)
   })
 })
 
 describe('FormulaForm — error handling', () => {
-  it('calls onFormulaError and sets field to undefined when evaluator throws', () => {
+  it('calls onFormulaError and sets field to undefined when evaluator throws', async () => {
+    vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
     const onFormulaError = vi.fn()
     const schema = {
@@ -239,15 +290,17 @@ describe('FormulaForm — error handling', () => {
         Form={MockForm as any}
       />
     )
-    const received = MockForm.mock.calls[0][0].formData
-    expect(received.bad).toBeUndefined()
-    expect(received.good).toBe(6)
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData.bad).toBeUndefined()
+    expect(lastCall[0].formData.good).toBe(6)
     expect(onFormulaError).toHaveBeenCalledWith(['bad'], expect.any(Error))
   })
 })
 
 describe('FormulaForm — extended context', () => {
-  it('makes __formData__ available when x-formula-context is extended', () => {
+  it('makes __formData__ available when x-formula-context is extended', async () => {
+    vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
     const schema = {
       type: 'object',
@@ -271,11 +324,13 @@ describe('FormulaForm — extended context', () => {
         Form={MockForm as any}
       />
     )
-    const received = MockForm.mock.calls[0][0].formData
-    expect(received.total).toBe(105)
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData.total).toBe(105)
   })
 
-  it('uses custom formulaDataKey when provided', () => {
+  it('uses custom formulaDataKey when provided', async () => {
+    vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
     const schema = {
       type: 'object',
@@ -300,11 +355,13 @@ describe('FormulaForm — extended context', () => {
         Form={MockForm as any}
       />
     )
-    const received = MockForm.mock.calls[0][0].formData
-    expect(received.total).toBe(105)
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData.total).toBe(105)
   })
 
-  it('uses custom formulaPathKey when provided', () => {
+  it('uses custom formulaPathKey when provided', async () => {
+    vi.useFakeTimers()
     const MockForm = vi.fn(() => <div />)
     const capturedContexts: object[] = []
     const capturingEval = (formula: string, ctx: object) => {
@@ -333,8 +390,70 @@ describe('FormulaForm — extended context', () => {
         Form={MockForm as any}
       />
     )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
     const ctx = capturedContexts[0] as any
     expect(ctx.myPath).toEqual(['b'])
     expect(ctx.__path__).toBeUndefined()
+  })
+})
+
+describe('FormulaForm — debounceMs prop', () => {
+  it('uses a custom debounceMs value', async () => {
+    vi.useFakeTimers()
+    const evaluator = vi.fn().mockImplementation(evalSimple)
+    const schema = {
+      type: 'object',
+      properties: {
+        a: { type: 'number' },
+        b: { type: 'number', 'x-formula': 'a * 2' },
+      },
+    }
+    render(
+      <FormulaForm
+        schema={schema as any}
+        formData={{ a: 1, b: 0 }}
+        validator={validator}
+        evaluator={evaluator}
+        onChange={vi.fn()}
+        debounceMs={500}
+        Form={vi.fn(() => <div />) as any}
+      />
+    )
+
+    // Should not evaluate before 500ms
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(evaluator).not.toHaveBeenCalled()
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(200) })
+    expect(evaluator).toHaveBeenCalled()
+  })
+})
+
+describe('FormulaForm — onLoadingChange prop', () => {
+  it('calls onLoadingChange with in-flight paths and then []', async () => {
+    vi.useFakeTimers()
+    const onLoadingChange = vi.fn()
+    const schema = {
+      type: 'object',
+      properties: {
+        a: { type: 'number' },
+        b: { type: 'number', 'x-formula': 'a * 2' },
+      },
+    }
+    render(
+      <FormulaForm
+        schema={schema as any}
+        formData={{ a: 3, b: 0 }}
+        validator={validator}
+        evaluator={evalSimple}
+        onChange={vi.fn()}
+        onLoadingChange={onLoadingChange}
+        Form={vi.fn(() => <div />) as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+
+    expect(onLoadingChange).toHaveBeenNthCalledWith(1, [['b']])
+    expect(onLoadingChange).toHaveBeenNthCalledWith(2, [])
   })
 })
