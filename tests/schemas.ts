@@ -19,7 +19,7 @@ export const basic: DemoSchema = {
       quantity: { type: 'number' },
       total: { type: 'number', 'x-formula': 'price * quantity' },
     },
-  },
+  } as unknown as RJSFSchema,
   formData: { price: 10, quantity: 3, total: 0 },
 }
 
@@ -32,7 +32,7 @@ export const convergence: DemoSchema = {
       double: { type: 'number', 'x-formula': 'base * 2' },
       quad: { type: 'number', 'x-formula': 'double * 2' },
     },
-  },
+  } as unknown as RJSFSchema,
   formData: { base: 5, double: 0, quad: 0 },
 }
 
@@ -53,7 +53,7 @@ export const arrayItems: DemoSchema = {
         },
       },
     },
-  },
+  } as unknown as RJSFSchema,
   formData: {
     items: [
       { price: 10, quantity: 2, total: 0 },
@@ -76,7 +76,7 @@ export const nestedObject: DemoSchema = {
         },
       },
     },
-  },
+  } as unknown as RJSFSchema,
   formData: { order: { price: 4, quantity: 5, total: 0 } },
 }
 
@@ -93,7 +93,7 @@ export const extendedContext: DemoSchema = {
         'x-formula-context': 'extended',
       },
     },
-  },
+  } as unknown as RJSFSchema,
   formData: { tax: 5, subtotal: 100, total: 0 },
 }
 
@@ -110,7 +110,7 @@ export const customFormulaDataKey: DemoSchema = {
         'x-formula-context': 'extended',
       },
     },
-  },
+  } as unknown as RJSFSchema,
   formData: { tax: 5, subtotal: 100, total: 0 },
   formulaDataKey: 'fd',
 }
@@ -127,7 +127,7 @@ export const customFormulaPathKey: DemoSchema = {
         'x-formula-context': 'extended',
       },
     },
-  },
+  } as unknown as RJSFSchema,
   formData: { a: 3, b: 0 },
   formulaPathKey: 'myPath',
 }
@@ -140,7 +140,7 @@ export const customKey: DemoSchema = {
       a: { type: 'number' },
       b: { type: 'number', 'x-calc': 'a * 3' },
     },
-  },
+  } as unknown as RJSFSchema,
   formData: { a: 4, b: 0 },
   formulaKey: 'x-calc',
 }
@@ -154,6 +154,6 @@ export const errorHandling: DemoSchema = {
       bad: { type: 'number', 'x-formula': 'throw_error' },
       good: { type: 'number', 'x-formula': 'a + 1' },
     },
-  },
+  } as unknown as RJSFSchema,
   formData: { a: 5, bad: 0, good: 0 },
 }
