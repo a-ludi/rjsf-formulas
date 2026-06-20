@@ -1,6 +1,17 @@
 {
-  "name": "rjsf-formulas",
+  "name": "@a-ludi/rjsf-formulas",
   "version": "0.1.0",
+  "description": "RJSF extension for computed fields driven by formulas",
+  "author": "Arne Ludwig <arne.ludwig@posteo.de>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/a-ludi/rjsf-formulas.git"
+  },
+  "homepage": "https://a-ludi.github.io/rjsf-formulas/",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "files": [
     "dist/"
@@ -20,6 +31,8 @@
   },
   "scripts": {
     "build": "vite build && cp dist/index.d.mts dist/index.d.cts",
+    "build:docs": "typedoc && vitepress build website",
+    "build:demo": "vite build --config demo/vite.config.ts",
     "dev": "vite --config demo/vite.config.ts",
     "test": "vitest run",
     "prepare": "husky",
