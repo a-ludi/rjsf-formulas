@@ -83,9 +83,8 @@ export function useAsyncFormulas(
           const anyDirty = [...stateMap.values()].some(s => s === 'dirty')
           stateMap.clear()
 
-          setEnrichedFormData(result)
-
           if (!anyDirty) {
+            setEnrichedFormData(result)
             if (concretePaths.length > 0) onLoadingChangeRef.current?.([])
             break
           }
