@@ -70,6 +70,8 @@ function useAsyncFormulas(
 4. When the sequence finishes, if any field is `dirty`, a new sequence starts immediately (no extra debounce wait)
 5. `enrichedFormData` state is updated after each completed sequence
 
+**External `formData` changes:** The hook also watches the `formData` parameter via `useEffect`. If the parent passes a new `formData` value (controlled component pattern), the hook calls `handleInput(formData)` internally, triggering debounce and evaluation exactly as if the user had edited a field.
+
 **Loading callbacks:** `onLoadingChange` is called whenever field states transition — once with all in-flight paths when a sequence starts, and again with `[]` when all paths return to `idle`.
 
 ## Section 3: `FormulaForm` changes
