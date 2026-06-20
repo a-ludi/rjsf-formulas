@@ -1,6 +1,6 @@
 {
   "name": "@a-ludi/rjsf-formulas",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "RJSF extension for computed fields driven by formulas",
   "author": "Arne Ludwig <arne.ludwig@posteo.de>",
   "license": "MIT",
