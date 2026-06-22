@@ -10,6 +10,7 @@ describe('analyzeSchema — flat objects', () => {
       path: ['total'],
       formula: 'price * quantity',
       contextMode: 'siblings',
+      condition: true,
     })
   })
 
@@ -147,5 +148,137 @@ describe('analyzeSchema — non-string formula guard', () => {
     expect(result).toEqual([])
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('not a string'))
     warnSpy.mockRestore()
+  })
+})
+
+describe('analyzeSchema — allOf branches', () => {
+  it('recurses into allOf branches and collects formula fields', () => {
+    const schema = {
+      type: 'object',
+      allOf: [
+        {
+          properties: {
+            a: { type: 'number' },
+            b: { type: 'number', 'x-formula': 'a * 2' },
+          },
+        },
+        {
+          properties: {
+            c: { type: 'number', 'x-formula': 'a + b' },
+          },
+        },
+      ],
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(2)
+    expect(result[0]).toEqual({
+      path: ['b'],
+      formula: 'a * 2',
+      contextMode: 'siblings',
+      condition: true,
+    })
+    expect(result[1]).toEqual({
+      path: ['c'],
+      formula: 'a + b',
+      contextMode: 'siblings',
+      condition: true,
+    })
+  })
+
+  it('collects fields from both properties and allOf branches', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        a: { type: 'number' },
+        b: { type: 'number', 'x-formula': 'a + 1' },
+      },
+      allOf: [
+        {
+          properties: {
+            c: { type: 'number', 'x-formula': 'a * 2' },
+          },
+        },
+      ],
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(2)
+    expect(result.map(f => f.path)).toEqual([['b'], ['c']])
+  })
+
+  it('does not warn or error when allOf branches have distinct paths', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const schema = {
+      allOf: [
+        { properties: { x: { type: 'number', 'x-formula': 'a + 1' } } },
+        { properties: { y: { type: 'number', 'x-formula': 'a + 2' } } },
+      ],
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(2)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+
+  it('all FormulaFields from allOf have condition: true', () => {
+    const schema = {
+      allOf: [
+        { properties: { total: { type: 'number', 'x-formula': 'a + b' } } },
+      ],
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result[0].condition).toBe(true)
+  })
+})
+
+describe('analyzeSchema — allOf conflict detection', () => {
+  it('warns and takes last on path collision with default behavior (warn)', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const schema = {
+      allOf: [
+        { properties: { total: { type: 'number', 'x-formula': 'a + b' } } },
+        { properties: { total: { type: 'number', 'x-formula': 'a * b' } } },
+      ],
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].formula).toBe('a * b')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('conflict'))
+    warnSpy.mockRestore()
+  })
+
+  it('silently takes last on path collision with formulaConflictBehavior: "ignore"', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const schema = {
+      allOf: [
+        { properties: { total: { type: 'number', 'x-formula': 'a + b' } } },
+        { properties: { total: { type: 'number', 'x-formula': 'a * b' } } },
+      ],
+    }
+    const result = analyzeSchema(schema as any, { formulaConflictBehavior: 'ignore' })
+    expect(result).toHaveLength(1)
+    expect(result[0].formula).toBe('a * b')
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+
+  it('throws synchronously on path collision with formulaConflictBehavior: "error"', () => {
+    const schema = {
+      allOf: [
+        { properties: { total: { type: 'number', 'x-formula': 'a + b' } } },
+        { properties: { total: { type: 'number', 'x-formula': 'a * b' } } },
+      ],
+    }
+    expect(() => analyzeSchema(schema as any, { formulaConflictBehavior: 'error' })).toThrow(TypeError)
+  })
+
+  it('error message includes both conflicting formulas', () => {
+    const schema = {
+      allOf: [
+        { properties: { total: { type: 'number', 'x-formula': 'a + b' } } },
+        { properties: { total: { type: 'number', 'x-formula': 'a * b' } } },
+      ],
+    }
+    expect(() => analyzeSchema(schema as any, { formulaConflictBehavior: 'error' }))
+      .toThrow(expect.objectContaining({ message: expect.stringContaining('a + b') }))
   })
 })

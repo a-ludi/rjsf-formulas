@@ -30,6 +30,13 @@ export type FormulaField = {
   formula: string
   /** Which values are available when evaluating this field's formula. */
   contextMode: ContextMode
+  /**
+   * The schema condition under which this formula is active.
+   *
+   * - `true` — always active (fields from `properties`, `items`, `prefixItems`, or `allOf` branches).
+   * - `RJSFSchema` — a conditional schema (reserved for `oneOf`/`anyOf` branches introduced in later tasks).
+   */
+  condition: RJSFSchema | true
 }
 
 /**
@@ -40,6 +47,14 @@ export type AnalyzeSchemaOptions = {
   formulaKey?: string
   /** Schema key that selects the context mode for a computed field. Defaults to `'x-formula-context'`. */
   formulaContextKey?: string
+  /**
+   * What to do when multiple `allOf` branches define a formula for the same path.
+   *
+   * - `'ignore'`: silently take the last definition.
+   * - `'warn'` (default): emit `console.warn` and take the last definition.
+   * - `'error'`: throw a `TypeError` synchronously.
+   */
+  formulaConflictBehavior?: 'ignore' | 'warn' | 'error'
 }
 
 /**
@@ -74,12 +89,13 @@ export function analyzeSchema(
 ): FormulaField[] {
   const formulaKey = options?.formulaKey ?? 'x-formula'
   const formulaContextKey = options?.formulaContextKey ?? 'x-formula-context'
+  const formulaConflictBehavior = options?.formulaConflictBehavior ?? 'warn'
   const fields: FormulaField[] = []
-  traverse(schema, [], fields, formulaKey, formulaContextKey)
+  traverse(schema, [], fields, formulaKey, formulaContextKey, formulaConflictBehavior)
   return fields
 }
 
-const COMPOSITION_KEYS = ['$ref', 'oneOf', 'anyOf', 'allOf'] as const
+const UNSUPPORTED_COMPOSITION_KEYS = ['$ref', 'oneOf', 'anyOf'] as const
 
 function resolveContextMode(
   value: unknown,
@@ -97,15 +113,57 @@ function formatPath(path: (string | number | ArrayIndex)[]): string {
   return path.map(s => (typeof s === 'symbol' ? '[*]' : String(s))).join(', ')
 }
 
+function pathKey(path: (string | number | ArrayIndex)[]): string {
+  return path.map(s => (typeof s === 'symbol' ? '[*]' : String(s))).join('.')
+}
+
+function applyConflictBehavior(
+  existing: FormulaField,
+  incoming: FormulaField,
+  behavior: 'ignore' | 'warn' | 'error'
+): void {
+  const key = pathKey(existing.path)
+  if (behavior === 'error') {
+    throw new TypeError(
+      `[rjsf-formulas] Formula conflict at path [${formatPath(existing.path)}]: "${existing.formula}" vs "${incoming.formula}". Resolve the conflict or set formulaConflictBehavior to 'ignore' or 'warn'.`
+    )
+  }
+  if (behavior === 'warn') {
+    console.warn(
+      `[rjsf-formulas] Formula conflict at path [${key}]: "${existing.formula}" (earlier allOf branch) is overridden by "${incoming.formula}" (later allOf branch).`
+    )
+  }
+}
+
+function mergeFields(
+  base: FormulaField[],
+  incoming: FormulaField[],
+  behavior: 'ignore' | 'warn' | 'error'
+): void {
+  for (const field of incoming) {
+    const key = pathKey(field.path)
+    const existingIndex = base.findIndex(f => pathKey(f.path) === key)
+    if (existingIndex !== -1) {
+      applyConflictBehavior(base[existingIndex], field, behavior)
+      base[existingIndex] = field
+    } else {
+      base.push(field)
+    }
+  }
+}
+
 function traverse(
   schema: RJSFSchema,
   path: (string | number | ArrayIndex)[],
   fields: FormulaField[],
   formulaKey: string,
-  formulaContextKey: string
+  formulaContextKey: string,
+  formulaConflictBehavior: 'ignore' | 'warn' | 'error'
 ): void {
-  // Warn on composition operators (issue 06)
-  for (const key of COMPOSITION_KEYS) {
+  const schemaAny = schema as Record<string, unknown>
+
+  // Warn on unsupported composition operators (issue 06)
+  for (const key of UNSUPPORTED_COMPOSITION_KEYS) {
     if (key in schema) {
       console.warn(
         `[rjsf-formulas] Schema composition operator "${key}" at path [${formatPath(path)}] is not supported and will be skipped. See issue 06.`
@@ -115,7 +173,7 @@ function traverse(
 
   // Rule 1: computed field — record and stop
   if (formulaKey in schema) {
-    const formula = (schema as Record<string, unknown>)[formulaKey]
+    const formula = schemaAny[formulaKey]
     if (typeof formula !== 'string') {
       console.warn(
         `[rjsf-formulas] Formula at path [${formatPath(path)}] is not a string (got ${typeof formula}), skipping.`
@@ -125,36 +183,33 @@ function traverse(
     fields.push({
       path,
       formula,
-      contextMode: resolveContextMode(
-        (schema as Record<string, unknown>)[formulaContextKey],
-        path
-      ),
+      contextMode: resolveContextMode(schemaAny[formulaContextKey], path),
+      condition: true,
     })
     return
   }
 
-  // Rule 2: object — recurse into properties
-  if (schema.type === 'object' && schema.properties) {
+  // Rule 2: object — recurse into properties (type: 'object' is implicit when properties are present)
+  if (schema.properties && schema.type !== 'array') {
     for (const [key, propSchema] of Object.entries(schema.properties)) {
       traverse(
         propSchema as RJSFSchema,
         [...path, key],
         fields,
         formulaKey,
-        formulaContextKey
+        formulaContextKey,
+        formulaConflictBehavior
       )
     }
   }
 
   // Rule 3: array — recurse into prefixItems and/or items
   if (schema.type === 'array') {
-    const schemaAny = schema as Record<string, unknown>
-
     // Rule 3a: prefixItems (tuple positions with static indices)
     if (Array.isArray(schemaAny['prefixItems'])) {
       const prefixItems = schemaAny['prefixItems'] as RJSFSchema[]
       prefixItems.forEach((itemSchema, index) => {
-        traverse(itemSchema, [...path, index], fields, formulaKey, formulaContextKey)
+        traverse(itemSchema, [...path, index], fields, formulaKey, formulaContextKey, formulaConflictBehavior)
       })
     }
 
@@ -165,8 +220,19 @@ function traverse(
         [...path, ARRAY_INDEX],
         fields,
         formulaKey,
-        formulaContextKey
+        formulaContextKey,
+        formulaConflictBehavior
       )
+    }
+  }
+
+  // Rule 4: allOf — recurse into each branch, then merge with conflict detection
+  if (Array.isArray(schemaAny['allOf'])) {
+    const allOfBranches = schemaAny['allOf'] as RJSFSchema[]
+    for (const branch of allOfBranches) {
+      const branchFields: FormulaField[] = []
+      traverse(branch, path, branchFields, formulaKey, formulaContextKey, formulaConflictBehavior)
+      mergeFields(fields, branchFields, formulaConflictBehavior)
     }
   }
 }
