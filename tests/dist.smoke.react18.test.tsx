@@ -16,6 +16,7 @@ describe.skipIf(!distExists)('dist smoke test: React 18 compatibility', () => {
     // Inlined jsx-runtime crashes React 18 consumers because React 19's jsx-runtime
     // reads React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE
     // which doesn't exist in React 18.
+    // 'react-jsx-runtime' is the chunk name Rollup assigns when bundling this module.
     expect(distContent).not.toContain('react-jsx-runtime')
   })
 
