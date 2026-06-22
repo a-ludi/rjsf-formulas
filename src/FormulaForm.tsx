@@ -206,6 +206,7 @@ export function FormulaForm<
     <InnerForm
       {...rest}
       schema={schema}
+      validator={validator}
       formData={enrichedFormData as T}
       uiSchema={mergedUiSchema as any}
       onChange={handleChange}
