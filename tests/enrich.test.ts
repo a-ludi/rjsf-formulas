@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { getAt, setAt, expandPaths, ARRAY_INDEX } from '../src/enrich'
 
 describe('getAt', () => {
@@ -69,18 +69,20 @@ const evalSimple = (formula: string, ctx: object) =>
   // Safe for tests only: evaluates formula string with context as local variables
   new Function(...Object.keys(ctx), `return ${formula}`)(...Object.values(ctx))
 
+const alwaysActive = (_cond: object, _data: unknown) => true
+
 describe('enrich', () => {
   it('evaluates a single formula and returns enriched formData', async () => {
     const fields: FormulaField[] = [
       { path: ['total'], formula: 'price * quantity', contextMode: 'siblings', condition: true },
     ]
-    const result = await enrich({ price: 10, quantity: 3, total: 0 }, fields, evalSimple, 10, undefined)
+    const result = await enrich({ price: 10, quantity: 3, total: 0 }, fields, evalSimple, 10, undefined, '__formData__', '__path__', alwaysActive, 'warn')
     expect(result).toEqual({ price: 10, quantity: 3, total: 30 })
   })
 
   it('returns formData unchanged when no formula fields', async () => {
     const data = { a: 1 }
-    expect(await enrich(data, [], evalSimple, 10, undefined)).toBe(data)
+    expect(await enrich(data, [], evalSimple, 10, undefined, '__formData__', '__path__', alwaysActive, 'warn')).toBe(data)
   })
 
   it('evaluates formulas for each array element independently', async () => {
@@ -93,7 +95,7 @@ describe('enrich', () => {
         { price: 5, quantity: 4, total: 0 },
       ],
     }
-    const result = await enrich(data, fields, evalSimple, 10, undefined) as typeof data
+    const result = await enrich(data, fields, evalSimple, 10, undefined, '__formData__', '__path__', alwaysActive, 'warn') as typeof data
     expect(result.items[0].total).toBe(20)
     expect(result.items[1].total).toBe(20)
   })
@@ -103,7 +105,7 @@ describe('enrich', () => {
       { path: ['double'], formula: 'base * 2', contextMode: 'siblings', condition: true },
       { path: ['quad'], formula: 'double * 2', contextMode: 'siblings', condition: true },
     ]
-    const result = await enrich({ base: 5, double: 0, quad: 0 }, fields, evalSimple, 10, undefined) as any
+    const result = await enrich({ base: 5, double: 0, quad: 0 }, fields, evalSimple, 10, undefined, '__formData__', '__path__', alwaysActive, 'warn') as any
     expect(result.double).toBe(10)
     expect(result.quad).toBe(20)
   })
@@ -119,7 +121,11 @@ describe('enrich', () => {
       fields,
       evalSimple,
       10,
-      (path, error) => errors.push({ path, error })
+      (path, error) => errors.push({ path, error }),
+      '__formData__',
+      '__path__',
+      alwaysActive,
+      'warn'
     ) as any
     expect(result.bad).toBeUndefined()
     expect(result.good).toBe(2)
@@ -137,7 +143,11 @@ describe('enrich', () => {
       fields,
       evalSimple,
       3,
-      (path, error) => errors.push({ path, error })
+      (path, error) => errors.push({ path, error }),
+      '__formData__',
+      '__path__',
+      alwaysActive,
+      'warn'
     ) as any
     expect(result.x).toBeUndefined()
     expect(errors).toHaveLength(1)
@@ -149,7 +159,7 @@ describe('enrich', () => {
     const fields: FormulaField[] = [
       { path: ['total'], formula: 'price * quantity', contextMode: 'siblings', condition: true },
     ]
-    const result = await enrich({ price: 4, quantity: 5, total: 0 }, fields, asyncEval, 10, undefined)
+    const result = await enrich({ price: 4, quantity: 5, total: 0 }, fields, asyncEval, 10, undefined, '__formData__', '__path__', alwaysActive, 'warn')
     expect(result).toEqual({ price: 4, quantity: 5, total: 20 })
   })
 
@@ -164,7 +174,7 @@ describe('enrich', () => {
       { path: ['x'], formula: 'formulaA', contextMode: 'siblings', condition: true },
       { path: ['y'], formula: 'formulaB', contextMode: 'siblings', condition: true },
     ]
-    const enrichPromise = enrich({ x: 1, y: 2 }, fields, delayedEval, 10, undefined)
+    const enrichPromise = enrich({ x: 1, y: 2 }, fields, delayedEval, 10, undefined, '__formData__', '__path__', alwaysActive, 'warn')
     expect(called).toEqual(['formulaA', 'formulaB'])
     resolvers.forEach((res, i) => res(i + 1))
     await enrichPromise
@@ -185,7 +195,11 @@ describe('enrich', () => {
       fields,
       asyncFailEval,
       10,
-      (path, error) => errors.push({ path, error })
+      (path, error) => errors.push({ path, error }),
+      '__formData__',
+      '__path__',
+      alwaysActive,
+      'warn'
     ) as any
     expect(result.bad).toBeUndefined()
     expect(result.good).toBe(2)
@@ -199,8 +213,149 @@ describe('enrich', () => {
       { path: ['double'], formula: 'base * 2', contextMode: 'siblings', condition: true },
       { path: ['quad'], formula: 'double * 2', contextMode: 'siblings', condition: true },
     ]
-    const result = await enrich({ base: 5, double: 0, quad: 0 }, fields, asyncEval, 10, undefined) as any
+    const result = await enrich({ base: 5, double: 0, quad: 0 }, fields, asyncEval, 10, undefined, '__formData__', '__path__', alwaysActive, 'warn') as any
     expect(result.double).toBe(10)
     expect(result.quad).toBe(20)
+  })
+})
+
+describe('enrich — condition filtering', () => {
+  it('evaluates field with condition: true (backward compat)', async () => {
+    const checkConditionShouldNotBeCalled = (_cond: object, _data: unknown): boolean => {
+      throw new Error('checkCondition should not be called for condition: true fields')
+    }
+    const fields: FormulaField[] = [
+      { path: ['total'], formula: 'price * quantity', contextMode: 'siblings', condition: true },
+    ]
+    const result = await enrich(
+      { price: 2, quantity: 5, total: 0 },
+      fields,
+      evalSimple,
+      10,
+      undefined,
+      '__formData__',
+      '__path__',
+      checkConditionShouldNotBeCalled,
+      'warn'
+    ) as any
+    expect(result.total).toBe(10)
+  })
+
+  it('skips field when checkCondition returns false', async () => {
+    const fields: FormulaField[] = [
+      { path: ['computed'], formula: '42', contextMode: 'siblings', condition: { type: 'object' } },
+    ]
+    const result = await enrich(
+      { computed: 0 },
+      fields,
+      evalSimple,
+      10,
+      undefined,
+      '__formData__',
+      '__path__',
+      () => false,
+      'warn'
+    ) as any
+    // Field is skipped — value stays unchanged
+    expect(result.computed).toBe(0)
+  })
+
+  it('evaluates field when checkCondition returns true', async () => {
+    const fields: FormulaField[] = [
+      { path: ['computed'], formula: '42', contextMode: 'siblings', condition: { type: 'object' } },
+    ]
+    const result = await enrich(
+      { computed: 0 },
+      fields,
+      evalSimple,
+      10,
+      undefined,
+      '__formData__',
+      '__path__',
+      () => true,
+      'warn'
+    ) as any
+    expect(result.computed).toBe(42)
+  })
+})
+
+describe('enrich — runtime conflict handling', () => {
+  it('ignore mode silently takes last when two active fields share same path', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const evalCalled: string[] = []
+    const trackingEval = (formula: string, _ctx: object) => {
+      evalCalled.push(formula)
+      return evalSimple(formula, _ctx)
+    }
+    const fields: FormulaField[] = [
+      { path: ['val'], formula: '1', contextMode: 'siblings', condition: true },
+      { path: ['val'], formula: '2', contextMode: 'siblings', condition: true },
+    ]
+    const result = await enrich(
+      { val: 0 },
+      fields,
+      trackingEval,
+      10,
+      undefined,
+      '__formData__',
+      '__path__',
+      alwaysActive,
+      'ignore'
+    ) as any
+    expect(warnSpy).not.toHaveBeenCalled()
+    // Last formula wins
+    expect(result.val).toBe(2)
+    // Only the last formula was evaluated (first was deduplicated away), never the first
+    expect(evalCalled).not.toContain('1')
+    warnSpy.mockRestore()
+  })
+
+  it('warn mode emits console.warn and takes last', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fields: FormulaField[] = [
+      { path: ['val'], formula: '1', contextMode: 'siblings', condition: true },
+      { path: ['val'], formula: '2', contextMode: 'siblings', condition: true },
+    ]
+    const result = await enrich(
+      { val: 0 },
+      fields,
+      evalSimple,
+      10,
+      undefined,
+      '__formData__',
+      '__path__',
+      alwaysActive,
+      'warn'
+    ) as any
+    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(warnSpy.mock.calls[0][0]).toMatch(/conflict/)
+    expect(result.val).toBe(2)
+    warnSpy.mockRestore()
+  })
+
+  it('error mode throws synchronously before any evaluation', async () => {
+    const evalCalled: string[] = []
+    const trackingEval = (formula: string, _ctx: object) => {
+      evalCalled.push(formula)
+      return evalSimple(formula, _ctx)
+    }
+    const fields: FormulaField[] = [
+      { path: ['val'], formula: '1', contextMode: 'siblings', condition: true },
+      { path: ['val'], formula: '2', contextMode: 'siblings', condition: true },
+    ]
+    await expect(
+      enrich(
+        { val: 0 },
+        fields,
+        trackingEval,
+        10,
+        undefined,
+        '__formData__',
+        '__path__',
+        alwaysActive,
+        'error'
+      )
+    ).rejects.toThrow(TypeError)
+    expect(evalCalled).toEqual([])
   })
 })

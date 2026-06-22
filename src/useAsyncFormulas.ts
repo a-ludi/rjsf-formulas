@@ -34,6 +34,9 @@ export function useAsyncFormulas(
   const formulaFieldsRef = useRef(formulaFields)
   const maxPassesRef = useRef(maxConvergencePasses)
   const contextOptionsRef = useRef(contextOptions)
+  // Placeholder refs — Task 5 will wire these up from FormulaForm props
+  const checkConditionRef = useRef<(condition: object, formData: unknown) => boolean>(() => true)
+  const formulaConflictBehaviorRef = useRef<'ignore' | 'warn' | 'error'>('warn')
 
   useEffect(() => { onFormulaErrorRef.current = onFormulaError }, [onFormulaError])
   useEffect(() => { onLoadingChangeRef.current = onLoadingChange }, [onLoadingChange])
@@ -75,7 +78,9 @@ export function useAsyncFormulas(
             maxPassesRef.current,
             onFormulaErrorRef.current,
             contextOptionsRef.current.formulaDataKey,
-            contextOptionsRef.current.formulaPathKey
+            contextOptionsRef.current.formulaPathKey,
+            checkConditionRef.current,
+            formulaConflictBehaviorRef.current
           )
 
           if (isUnmountedRef.current) break

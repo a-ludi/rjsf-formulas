@@ -1,4 +1,5 @@
 import equal from 'fast-deep-equal'
+import type { RJSFSchema } from '@rjsf/utils'
 import type { FormulaField, ArrayIndex } from './analyzeSchema'
 import { ARRAY_INDEX } from './analyzeSchema'
 import { buildContext } from './buildContext'
@@ -113,17 +114,49 @@ export async function enrich(
   evaluator: (formula: string, context: object) => unknown | Promise<unknown>,
   maxConvergencePasses: number,
   onFormulaError: ((path: (string | number)[], error: Error) => void) | undefined,
-  formulaDataKey = '__formData__',
-  formulaPathKey = '__path__'
+  formulaDataKey: string,
+  formulaPathKey: string,
+  checkCondition: (condition: RJSFSchema, formData: unknown) => boolean,
+  formulaConflictBehavior: 'ignore' | 'warn' | 'error'
 ): Promise<unknown> {
-  if (formulaFields.length === 0) return formData
+  // Filter to only active fields based on condition
+  const activeFields = formulaFields.filter(field =>
+    field.condition === true || checkCondition(field.condition as RJSFSchema, formData)
+  )
+
+  if (activeFields.length === 0) return formData
+
+  // Detect runtime conflicts among active fields with the same template path
+  const pathSeen = new Map<string, FormulaField>()
+  const deduped: FormulaField[] = []
+  for (const field of activeFields) {
+    const key = JSON.stringify(field.path)
+    if (pathSeen.has(key)) {
+      if (formulaConflictBehavior === 'error') {
+        throw new TypeError(
+          `[rjsf-formulas] Formula conflict: two active fields share path [${field.path.join(', ')}]`
+        )
+      } else if (formulaConflictBehavior === 'warn') {
+        console.warn(
+          `[rjsf-formulas] Formula conflict: two active fields share path [${field.path.join(', ')}]; taking last`
+        )
+      }
+      // Replace the previous entry with the last one (take last)
+      const idx = deduped.indexOf(pathSeen.get(key)!)
+      deduped[idx] = field
+      pathSeen.set(key, field)
+    } else {
+      pathSeen.set(key, field)
+      deduped.push(field)
+    }
+  }
 
   const contextOptions: BuildContextOptions = { formulaDataKey, formulaPathKey }
   let current = formData
 
   for (let pass = 0; pass < maxConvergencePasses; pass++) {
-    const { data: candidate, errors } = await applyAllFormulas(current, formulaFields, evaluator, contextOptions)
-    if (allConverged(current, candidate, formulaFields)) {
+    const { data: candidate, errors } = await applyAllFormulas(current, deduped, evaluator, contextOptions)
+    if (allConverged(current, candidate, deduped)) {
       // Stable — emit error callbacks now that we know this is the final result
       for (const { path, error } of errors) {
         onFormulaError?.(path, error)
@@ -134,10 +167,10 @@ export async function enrich(
   }
 
   // maxConvergencePasses exceeded — identify and report non-converging fields
-  const { data: candidate } = await applyAllFormulas(current, formulaFields, evaluator, contextOptions)
+  const { data: candidate } = await applyAllFormulas(current, deduped, evaluator, contextOptions)
   const result = structuredClone(candidate)
 
-  for (const field of formulaFields) {
+  for (const field of deduped) {
     for (const concretePath of expandPaths(field.path, candidate)) {
       if (!deepEqual(getAt(current, concretePath), getAt(candidate, concretePath))) {
         onFormulaError?.(
