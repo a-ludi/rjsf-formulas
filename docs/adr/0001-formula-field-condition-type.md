@@ -1,0 +1,3 @@
+# FormulaField condition typed as `RJSFSchema | true`
+
+`FormulaField.condition` uses `RJSFSchema | true` rather than optional `RJSFSchema` (where `undefined` = always-active) or `RJSFSchema` with `{}` as the always-true sentinel. `true` is the canonical always-active value because `field.condition !== true` is a single strict-equality check, and `true` reads as "always active" without needing a comment. `undefined` would rely on an absence convention that isn't self-documenting, and `{}` is a valid JSON Schema that would silently pass through `validator.isValid` rather than being short-circuited. Note that `true` is not assignable to `RJSFSchema` (`JSONSchema7 & GenericObjectType`) — it lives one level up in `JSONSchema7Definition` — so the union is explicit.
