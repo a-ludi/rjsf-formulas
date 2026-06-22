@@ -145,6 +145,89 @@ export const customKey: DemoSchema = {
   formulaKey: 'x-calc',
 }
 
+export const allOfBranch: DemoSchema = {
+  label: 'allOf branches: sum = a + b',
+  schema: {
+    type: 'object',
+    allOf: [
+      { properties: { a: { type: 'number' }, b: { type: 'number' } } },
+      { properties: { sum: { type: 'number', 'x-formula': 'a + b' } } },
+    ],
+  } as unknown as RJSFSchema,
+  formData: { a: 3, b: 4, sum: 0 },
+}
+
+export const oneOfBranch: DemoSchema = {
+  label: 'oneOf conditional: add vs multiply',
+  schema: {
+    type: 'object',
+    properties: {
+      mode: { type: 'string', enum: ['add', 'multiply'] },
+      a: { type: 'number' },
+      b: { type: 'number' },
+      result: { type: 'number' },
+    },
+    oneOf: [
+      {
+        properties: {
+          mode: { const: 'add' },
+          result: { type: 'number', 'x-formula': 'a + b' },
+        },
+      },
+      {
+        properties: {
+          mode: { const: 'multiply' },
+          result: { type: 'number', 'x-formula': 'a * b' },
+        },
+      },
+    ],
+  } as unknown as RJSFSchema,
+  formData: { mode: 'multiply', a: 3, b: 4, result: 0 },
+}
+
+export const ifThenBranch: DemoSchema = {
+  label: 'if/then: double when mode=double',
+  schema: {
+    type: 'object',
+    properties: {
+      mode: { type: 'string', enum: ['double', 'increment'] },
+      x: { type: 'number' },
+      result: { type: 'number' },
+    },
+    if: { properties: { mode: { const: 'double' } } },
+    then: { properties: { result: { type: 'number', 'x-formula': 'x * 2' } } },
+    else: { properties: { result: { type: 'number', 'x-formula': 'x + 1' } } },
+  } as unknown as RJSFSchema,
+  formData: { mode: 'double', x: 5, result: 0 },
+}
+
+export const ifElseBranch: DemoSchema = {
+  label: 'if/else: increment when mode≠double',
+  schema: ifThenBranch.schema,
+  formData: { mode: 'increment', x: 5, result: 0 },
+}
+
+export const refResolved: DemoSchema = {
+  label: '$ref: computed item total',
+  schema: {
+    $defs: {
+      PricedItem: {
+        type: 'object',
+        properties: {
+          price: { type: 'number' },
+          qty: { type: 'number' },
+          total: { type: 'number', 'x-formula': 'price * qty' },
+        },
+      },
+    },
+    type: 'object',
+    properties: {
+      item: { $ref: '#/$defs/PricedItem' },
+    },
+  } as unknown as RJSFSchema,
+  formData: { item: { price: 5, qty: 3, total: 0 } },
+}
+
 export const errorHandling: DemoSchema = {
   label: 'Error handling',
   schema: {

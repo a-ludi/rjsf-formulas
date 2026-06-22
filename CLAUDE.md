@@ -30,6 +30,10 @@ Default label strings are used (needs-triage, needs-info, ready-for-agent, ready
 
 Single-context repo — one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+## Schemas
+
+All schemas used in unit tests must be defined in `tests/schemas.ts` as named `DemoSchema` exports — never inline inside test files. This makes every test fixture automatically available to the demo app without any extra work.
+
 ## Testing — Red-Green TDD (REQUIRED)
 
 **Every code change must follow strict red-green TDD. This is non-negotiable.**

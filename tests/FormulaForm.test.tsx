@@ -12,6 +12,11 @@ import {
   customFormulaPathKey,
   customKey,
   errorHandling,
+  allOfBranch,
+  oneOfBranch,
+  ifThenBranch,
+  ifElseBranch,
+  refResolved,
 } from './schemas'
 
 const evalSimple = (formula: string, ctx: object) =>
@@ -413,17 +418,10 @@ describe('FormulaForm — composite schemas', () => {
   it('evaluates a formula defined inside an allOf branch', async () => {
     vi.useFakeTimers()
     const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
-    const schema = {
-      type: 'object',
-      allOf: [
-        { properties: { a: { type: 'number' }, b: { type: 'number' } } },
-        { properties: { sum: { type: 'number', 'x-formula': 'a + b' } } },
-      ],
-    }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ a: 3, b: 4, sum: 0 }}
+        schema={allOfBranch.schema as any}
+        formData={allOfBranch.formData as any}
         validator={validator}
         evaluator={evalSimple}
         Form={MockForm as any}
@@ -437,35 +435,10 @@ describe('FormulaForm — composite schemas', () => {
   it('evaluates only the active oneOf branch formula based on form data', async () => {
     vi.useFakeTimers()
     const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
-    const schema = {
-      type: 'object',
-      properties: {
-        mode: { type: 'string' },
-        a: { type: 'number' },
-        b: { type: 'number' },
-        result: { type: 'number' },
-      },
-      oneOf: [
-        {
-          properties: {
-            mode: { const: 'add' },
-            result: { type: 'number', 'x-formula': 'a + b' },
-          },
-        },
-        {
-          properties: {
-            mode: { const: 'multiply' },
-            result: { type: 'number', 'x-formula': 'a * b' },
-          },
-        },
-      ],
-    }
-
-    // mode='multiply': only the multiply branch formula should run
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ mode: 'multiply', a: 3, b: 4, result: 0 }}
+        schema={oneOfBranch.schema as any}
+        formData={oneOfBranch.formData as any}
         validator={validator}
         evaluator={evalSimple}
         Form={MockForm as any}
@@ -473,27 +446,16 @@ describe('FormulaForm — composite schemas', () => {
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
     const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
-    expect(lastCall[0].formData.result).toBe(12) // a * b, not a + b
+    expect(lastCall[0].formData.result).toBe(12) // mode='multiply': a * b, not a + b
   })
 
   it('evaluates the then-branch formula when the if condition matches', async () => {
     vi.useFakeTimers()
     const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
-    const schema = {
-      type: 'object',
-      properties: {
-        mode: { type: 'string' },
-        x: { type: 'number' },
-        result: { type: 'number' },
-      },
-      if: { properties: { mode: { const: 'double' } } },
-      then: { properties: { result: { type: 'number', 'x-formula': 'x * 2' } } },
-      else: { properties: { result: { type: 'number', 'x-formula': 'x + 1' } } },
-    }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ mode: 'double', x: 5, result: 0 }}
+        schema={ifThenBranch.schema as any}
+        formData={ifThenBranch.formData as any}
         validator={validator}
         evaluator={evalSimple}
         Form={MockForm as any}
@@ -501,27 +463,16 @@ describe('FormulaForm — composite schemas', () => {
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
     const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
-    expect(lastCall[0].formData.result).toBe(10) // x * 2
+    expect(lastCall[0].formData.result).toBe(10) // mode='double': x * 2
   })
 
   it('evaluates the else-branch formula when the if condition does not match', async () => {
     vi.useFakeTimers()
     const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
-    const schema = {
-      type: 'object',
-      properties: {
-        mode: { type: 'string' },
-        x: { type: 'number' },
-        result: { type: 'number' },
-      },
-      if: { properties: { mode: { const: 'double' } } },
-      then: { properties: { result: { type: 'number', 'x-formula': 'x * 2' } } },
-      else: { properties: { result: { type: 'number', 'x-formula': 'x + 1' } } },
-    }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ mode: 'other', x: 5, result: 0 }}
+        schema={ifElseBranch.schema as any}
+        formData={ifElseBranch.formData as any}
         validator={validator}
         evaluator={evalSimple}
         Form={MockForm as any}
@@ -529,32 +480,16 @@ describe('FormulaForm — composite schemas', () => {
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
     const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
-    expect(lastCall[0].formData.result).toBe(6) // x + 1
+    expect(lastCall[0].formData.result).toBe(6) // mode='increment': x + 1
   })
 
   it('evaluates a formula defined in a $ref-referenced sub-schema', async () => {
     vi.useFakeTimers()
     const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
-    const schema = {
-      $defs: {
-        PricedItem: {
-          type: 'object',
-          properties: {
-            price: { type: 'number' },
-            qty: { type: 'number' },
-            total: { type: 'number', 'x-formula': 'price * qty' },
-          },
-        },
-      },
-      type: 'object',
-      properties: {
-        item: { $ref: '#/$defs/PricedItem' },
-      },
-    }
     render(
       <FormulaForm
-        schema={schema as any}
-        formData={{ item: { price: 5, qty: 3, total: 0 } }}
+        schema={refResolved.schema as any}
+        formData={refResolved.formData as any}
         validator={validator}
         evaluator={evalSimple}
         Form={MockForm as any}
