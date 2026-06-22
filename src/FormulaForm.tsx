@@ -174,7 +174,7 @@ export function FormulaForm<
 
   const checkCondition = useCallback(
     (condition: RJSFSchema, formData: unknown) =>
-      validator.isValid(condition as any, formData, schema as any),
+      validator.isValid(condition as any, formData as any, schema as any),
     [validator, schema]
   )
 
