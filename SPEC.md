@@ -243,12 +243,16 @@ Given `formData.items = [{ price: 10, quantity: 2 }, { price: 5, quantity: 4 }]`
 
 ## Composite Schema Support
 
-Schema composition operators (`$ref`, `oneOf`, `anyOf`, `allOf`) are **not supported in v1**. `analyzeSchema` skips these nodes and emits a `console.warn` when it encounters them.
+Schema composition operators (`$ref`, `oneOf`, `anyOf`, `allOf`, `if`/`then`/`else`) are fully supported.
 
-Support is planned for a future release (issue 06). The key considerations are:
+`analyzeSchema` recurses into all branches and attaches a `condition: RJSFSchema | true` to each `FormulaField`. At evaluation time, `enrich` calls `validator.isValid(condition, formData, rootSchema)` (the same call RJSF uses internally) to determine which fields are active. Only active fields are evaluated; inactive fields are left unchanged.
 
-- **`oneOf` / `anyOf` / `allOf`**: Recurse into all branches and collect formula descriptors from each. The evaluation layer already works against live `formData`, so which branch is active is handled naturally.
-- **`$ref`**: Requires a resolver. Adding support will introduce an optional `resolver` parameter to `analyzeSchema` — this must be designed to remain non-breaking for callers that do not use `$ref`.
+- **`allOf`**: All branches are always active; conflicts between branches are detected at schema-analysis time.
+- **`oneOf` / `anyOf`**: Each branch carries its schema as the condition; conflicts between simultaneously-active branches are detected at evaluation time.
+- **`$ref`**: Resolved via `findSchemaDefinition` from `@rjsf/utils` against the root schema (in-document refs only, matching RJSF's own behavior).
+- **`if`/`then`/`else`**: `then` fields carry the `if` schema as their condition; `else` fields carry `{ not: ifSchema }`. Formulas inside the `if` body itself are not collected (the `if` schema is never rendered by RJSF) and emit a `console.warn`.
+
+Conflict handling is controlled by the `formulaConflictBehavior` option on `analyzeSchema` and prop on `FormulaForm` (`'ignore'` | `'warn'` | `'error'`; default `'warn'`).
 
 ---
 

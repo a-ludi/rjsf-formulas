@@ -86,10 +86,12 @@ export type FormulaFormProps<
   onLoadingChange?: (loadingPaths: (string | number)[][]) => void
 
   /**
-   * How to handle a formula field that also has a user-supplied value in `formData`.
-   * - `'ignore'` — silently use the formula result.
-   * - `'warn'` — log a console warning (default).
-   * - `'error'` — throw an error.
+   * What to do when multiple branches of a composition operator (`allOf` at schema-analysis
+   * time, or simultaneously-active `oneOf`/`anyOf` branches at evaluation time) define a
+   * formula for the same field path.
+   * - `'ignore'` — silently take the last definition.
+   * - `'warn'` (default) — emit `console.warn` and take the last definition.
+   * - `'error'` — throw a `TypeError` synchronously (useful during development).
    */
   formulaConflictBehavior?: 'ignore' | 'warn' | 'error'
 }

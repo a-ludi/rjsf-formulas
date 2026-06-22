@@ -61,9 +61,14 @@ export function useAsyncFormulas(
           const input = pendingInputRef.current
           const fields = formulaFieldsRef.current
 
+          // Only report loading for fields whose condition is currently active
+          const activeFields = fields.filter(f =>
+            f.condition === true || checkConditionRef.current(f.condition as any, input)
+          )
+
           // Collect concrete paths for loading reporting
           const concretePaths: (string | number)[][] = []
-          for (const field of fields) {
+          for (const field of activeFields) {
             for (const cp of expandPaths(field.path, input)) {
               concretePaths.push(cp)
             }

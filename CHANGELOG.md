@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Composite schema support: `analyzeSchema` now recurses into `$ref`, `allOf`, `oneOf`, `anyOf`, and `if`/`then`/`else` branches to collect formula fields from all branches.
+- `FormulaField.condition: RJSFSchema | true` — each discovered field carries the JSON Schema condition under which it is active (`true` = always active).
+- At evaluation time, `enrich` calls `validator.isValid(condition, formData, rootSchema)` to determine which fields are active; only active fields are evaluated.
+- `formulaConflictBehavior: 'ignore' | 'warn' | 'error'` option on `analyzeSchema` and prop on `FormulaForm` (default `'warn'`) — controls what happens when multiple simultaneously-active branches define a formula for the same path.
+- `formulaConflictBehavior: 'error'` throws a `TypeError` synchronously, intended as a developer tool for aggressive schema validation during development.
+
 ## [0.1.3] - 2026-06-22
 
 ### Fixed
