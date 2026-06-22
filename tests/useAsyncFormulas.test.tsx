@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import React from 'react'
 import { useAsyncFormulas } from '../src/useAsyncFormulas'
 import type { FormulaField } from '../src/analyzeSchema'
 
@@ -389,5 +390,46 @@ describe('useAsyncFormulas — convergence limit', () => {
     expect(onFormulaError).toHaveBeenCalledWith(['x'], expect.any(Error))
     expect(onFormulaError.mock.calls[0][1].message).toMatch(/did not converge/)
     expect((result.current.enrichedFormData as any).x).toBeUndefined()
+  })
+})
+
+describe('useAsyncFormulas — React StrictMode compatibility', () => {
+  it('enriches formData after debounce when rendered inside React.StrictMode', async () => {
+    vi.useFakeTimers()
+    const fields = [field(['total'], 'price * quantity')]
+    const { result } = renderHook(
+      () => useAsyncFormulas(
+        { price: 2, quantity: 3, total: 0 },
+        fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn'
+      ),
+      { wrapper: ({ children }) => <React.StrictMode>{children}</React.StrictMode> }
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect((result.current.enrichedFormData as any).total).toBe(6)
+  })
+
+  it('enriches formData correctly after unmount and remount', async () => {
+    vi.useFakeTimers()
+    const fields = [field(['total'], 'price * quantity')]
+
+    const { result, unmount } = renderHook(
+      () => useAsyncFormulas(
+        { price: 2, quantity: 3, total: 0 },
+        fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn'
+      )
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect((result.current.enrichedFormData as any).total).toBe(6)
+
+    unmount()
+
+    const { result: result2 } = renderHook(
+      () => useAsyncFormulas(
+        { price: 5, quantity: 4, total: 0 },
+        fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn'
+      )
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect((result2.current.enrichedFormData as any).total).toBe(20)
   })
 })

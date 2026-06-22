@@ -154,14 +154,17 @@ export function useAsyncFormulas(
     }
   }) // runs every render — guarded by deep equality
 
-  // Cleanup debounce on unmount
-  useEffect(
-    () => () => {
+  // Reset lifecycle sentinels on every (re)mount; clean up on unmount.
+  // The setup body runs before any debounce fires, so isUnmountedRef is false
+  // by the time startSequence checks it.
+  useEffect(() => {
+    isUnmountedRef.current = false
+    return () => {
       isUnmountedRef.current = true
+      hasMountedRef.current = false  // allow re-init on next mount (React StrictMode)
       if (debounceTimerRef.current !== null) clearTimeout(debounceTimerRef.current)
-    },
-    []
-  )
+    }
+  }, [])
 
   return { enrichedFormData, handleInput }
 }

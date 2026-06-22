@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Formula evaluation silently fails in apps using `<React.StrictMode>`: computed values are never applied and `onChange` is never called with enriched data. Root cause: two lifecycle refs (`isUnmountedRef`, `hasMountedRef`) were not reset on remount, causing the evaluation sequence to exit early after StrictMode's simulated unmount+remount cycle.
+
 ### Added
 
 - Composite schema support: `analyzeSchema` now recurses into `$ref`, `allOf`, `oneOf`, `anyOf`, and `if`/`then`/`else` branches to collect formula fields from all branches.

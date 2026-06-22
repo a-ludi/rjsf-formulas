@@ -408,3 +408,27 @@ describe('FormulaForm — onLoadingChange prop', () => {
     expect(onLoadingChange).toHaveBeenNthCalledWith(2, [])
   })
 })
+
+describe('FormulaForm — React StrictMode compatibility', () => {
+  it('calls onChange with enriched formData after initial evaluation in StrictMode', async () => {
+    vi.useFakeTimers()
+    const onChange = vi.fn()
+    render(
+      <React.StrictMode>
+        <FormulaForm
+          schema={basic.schema as any}
+          formData={basic.formData as any}
+          validator={validator}
+          evaluator={evalSimple}
+          onChange={onChange}
+          Form={vi.fn(() => <div />) as any}
+        />
+      </React.StrictMode>
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ formData: { price: 10, quantity: 3, total: 30 } }),
+      undefined
+    )
+  })
+})
