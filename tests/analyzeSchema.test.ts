@@ -390,6 +390,77 @@ describe('analyzeSchema — allOf branches', () => {
   })
 })
 
+describe('analyzeSchema — if/then/else', () => {
+  it('collects formulas from then branch with ifSchema as condition', () => {
+    const ifSchema = { properties: { type: { const: 'A' } } }
+    const schema = {
+      type: 'object',
+      if: ifSchema,
+      then: { properties: { total: { type: 'number', 'x-formula': 'a + b' } } },
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['total'])
+    expect(result[0].formula).toBe('a + b')
+    expect(result[0].condition).toEqual(ifSchema)
+  })
+
+  it('collects formulas from else branch with { not: ifSchema } as condition', () => {
+    const ifSchema = { properties: { type: { const: 'A' } } }
+    const schema = {
+      type: 'object',
+      if: ifSchema,
+      else: { properties: { fallback: { type: 'number', 'x-formula': 'x * 2' } } },
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['fallback'])
+    expect(result[0].condition).toEqual({ not: ifSchema })
+  })
+
+  it('collects from both then and else when both have formulas', () => {
+    const ifSchema = { properties: { type: { const: 'A' } } }
+    const schema = {
+      type: 'object',
+      if: ifSchema,
+      then: { properties: { total: { type: 'number', 'x-formula': 'a + b' } } },
+      else: { properties: { total: { type: 'number', 'x-formula': 'a * b' } } },
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(2)
+    expect(result[0].condition).toEqual(ifSchema)
+    expect(result[1].condition).toEqual({ not: ifSchema })
+  })
+
+  it('warns when formula key is found in if schema and does not collect it', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const schema = {
+      type: 'object',
+      if: { 'x-formula': 'should not be here' },
+      then: { properties: { total: { type: 'number', 'x-formula': 'a + b' } } },
+    }
+    const result = analyzeSchema(schema as any)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('if'))
+    // Only the then formula is collected, not anything from the if schema
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['total'])
+    warnSpy.mockRestore()
+  })
+
+  it('if/then condition composes with ambient condition from enclosing oneOf', () => {
+    const ifSchema = { properties: { type: { const: 'A' } } }
+    const outerBranch = {
+      properties: { type: { type: 'string' } },
+      if: ifSchema,
+      then: { properties: { total: { type: 'number', 'x-formula': 'a + b' } } },
+    }
+    const schema = { type: 'object', oneOf: [outerBranch] }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].condition).toEqual({ allOf: [outerBranch, ifSchema] })
+  })
+})
+
 describe('analyzeSchema — allOf conflict detection', () => {
   it('warns and takes last on path collision with default behavior (warn)', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})

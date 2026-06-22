@@ -270,4 +270,28 @@ function traverse(
       }
     }
   }
+
+  // Rule 6: if/then/else — traverse then/else with appropriate conditions; warn if formula found in if
+  if ('if' in schemaAny) {
+    const ifSchema = schemaAny['if'] as RJSFSchema
+    const thenSchema = schemaAny['then'] as RJSFSchema | undefined
+    const elseSchema = schemaAny['else'] as RJSFSchema | undefined
+
+    // Warn if the if schema itself contains a formula key (it is never rendered by RJSF)
+    if (formulaKey in (ifSchema as Record<string, unknown>)) {
+      console.warn(
+        `[rjsf-formulas] Formula key "${formulaKey}" found inside an "if" schema at path [${formatPath(path)}]. The "if" schema is a validation predicate and is never rendered — the formula will be ignored.`
+      )
+    }
+
+    if (thenSchema !== undefined) {
+      const thenCondition = composeCondition(ambientCondition, ifSchema)
+      traverse(thenSchema, path, fields, formulaKey, formulaContextKey, formulaConflictBehavior, thenCondition, rootSchema)
+    }
+
+    if (elseSchema !== undefined) {
+      const elseCondition = composeCondition(ambientCondition, { not: ifSchema })
+      traverse(elseSchema, path, fields, formulaKey, formulaContextKey, formulaConflictBehavior, elseCondition, rootSchema)
+    }
+  }
 }
