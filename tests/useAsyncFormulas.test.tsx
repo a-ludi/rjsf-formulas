@@ -12,6 +12,7 @@ const field = (path: (string | number)[], formula: string): FormulaField => ({
   path,
   formula,
   contextMode: 'siblings',
+  condition: true,
 })
 
 afterEach(() => {
