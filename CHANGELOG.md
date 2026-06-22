@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-06-22
+
+### Fixed
+
+- Externalize `react/jsx-runtime` and `react/jsx-dev-runtime` in the Vite library build so they are no longer bundled into the dist. The previously bundled React 19 jsx-runtime read `React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE`, which is undefined in React 18, crashing any consumer on React 18 (fixes [#1](https://github.com/a-ludi/rjsf-formulas/issues/1)).
+- Move `react-dom` from `dependencies` to `peerDependencies` so consumers bring their own instead of getting a pinned version as a transitive dependency.
+
 ## [0.1.2] - 2026-06-20
 
 ### Fixed
