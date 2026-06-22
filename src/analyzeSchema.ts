@@ -61,8 +61,9 @@ export type AnalyzeSchemaOptions = {
  * Scans a JSON Schema and returns descriptors for every field that carries a formula key.
  *
  * @remarks
- * Traversal is depth-first. Schema composition operators (`$ref`, `oneOf`, `anyOf`, `allOf`)
- * are not supported and emit a `console.warn` when encountered.
+ * Traversal is depth-first. `allOf` branches are fully supported. Schema composition
+ * operators `$ref`, `oneOf`, and `anyOf` are not yet supported and emit a `console.warn`
+ * when encountered.
  *
  * @param schema - The root RJSF schema to scan.
  * @param options - Optional key overrides for locating formulas in the schema.

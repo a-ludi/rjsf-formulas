@@ -8,12 +8,14 @@ const siblingsField: FormulaField = {
   path: ['total'],
   formula: 'price * quantity',
   contextMode: 'siblings',
+  condition: true,
 }
 
 const extendedField: FormulaField = {
   path: ['total'],
   formula: '__formData__.price * quantity',
   contextMode: 'extended',
+  condition: true,
 }
 
 describe('buildContext — siblings mode', () => {

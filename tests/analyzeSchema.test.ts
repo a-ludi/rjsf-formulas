@@ -219,6 +219,24 @@ describe('analyzeSchema — allOf branches', () => {
     warnSpy.mockRestore()
   })
 
+  it('collects formulas from allOf nested under a properties path', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        address: {
+          type: 'object',
+          allOf: [
+            { properties: { zipCode: { type: 'string', 'x-formula': 'city + "-" + state' } } },
+          ],
+        },
+      },
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['address', 'zipCode'])
+    expect(result[0].condition).toBe(true)
+  })
+
   it('all FormulaFields from allOf have condition: true', () => {
     const schema = {
       allOf: [

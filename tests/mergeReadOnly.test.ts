@@ -6,7 +6,7 @@ import type { FormulaField } from '../src/analyzeSchema'
 describe('mergeReadOnly', () => {
   it('sets ui:readonly on a flat computed field', () => {
     const fields: FormulaField[] = [
-      { path: ['total'], formula: 'a + b', contextMode: 'siblings' },
+      { path: ['total'], formula: 'a + b', contextMode: 'siblings', condition: true },
     ]
     const result = mergeReadOnly(undefined, fields)
     expect(result).toEqual({ total: { 'ui:readonly': true } })
@@ -14,7 +14,7 @@ describe('mergeReadOnly', () => {
 
   it('sets ui:readonly on a nested computed field', () => {
     const fields: FormulaField[] = [
-      { path: ['order', 'total'], formula: 'a + b', contextMode: 'siblings' },
+      { path: ['order', 'total'], formula: 'a + b', contextMode: 'siblings', condition: true },
     ]
     const result = mergeReadOnly(undefined, fields)
     expect(result).toEqual({ order: { total: { 'ui:readonly': true } } })
@@ -22,7 +22,7 @@ describe('mergeReadOnly', () => {
 
   it('preserves existing uiSchema entries', () => {
     const fields: FormulaField[] = [
-      { path: ['total'], formula: 'a + b', contextMode: 'siblings' },
+      { path: ['total'], formula: 'a + b', contextMode: 'siblings', condition: true },
     ]
     const existing = { price: { 'ui:widget': 'updown' } }
     const result = mergeReadOnly(existing, fields)
@@ -34,7 +34,7 @@ describe('mergeReadOnly', () => {
 
   it('uses items object for ARRAY_INDEX (uniform array)', () => {
     const fields: FormulaField[] = [
-      { path: ['rows', ARRAY_INDEX, 'total'], formula: 'a * b', contextMode: 'siblings' },
+      { path: ['rows', ARRAY_INDEX, 'total'], formula: 'a * b', contextMode: 'siblings', condition: true },
     ]
     const result = mergeReadOnly(undefined, fields)
     expect(result).toEqual({
@@ -44,7 +44,7 @@ describe('mergeReadOnly', () => {
 
   it('uses items array for prefixItems (tuple slot)', () => {
     const fields: FormulaField[] = [
-      { path: ['tuple', 2], formula: 'a + b', contextMode: 'siblings' },
+      { path: ['tuple', 2], formula: 'a + b', contextMode: 'siblings', condition: true },
     ]
     const result = mergeReadOnly(undefined, fields)
     expect(result).toEqual({
@@ -54,8 +54,8 @@ describe('mergeReadOnly', () => {
 
   it('uses items array + additionalItems when both integers and ARRAY_INDEX share an array', () => {
     const fields: FormulaField[] = [
-      { path: ['mixed', 1], formula: 'a + b', contextMode: 'siblings' },
-      { path: ['mixed', ARRAY_INDEX, 'total'], formula: 'x * y', contextMode: 'siblings' },
+      { path: ['mixed', 1], formula: 'a + b', contextMode: 'siblings', condition: true },
+      { path: ['mixed', ARRAY_INDEX, 'total'], formula: 'x * y', contextMode: 'siblings', condition: true },
     ]
     const result = mergeReadOnly(undefined, fields)
     expect(result).toEqual({
@@ -68,7 +68,7 @@ describe('mergeReadOnly', () => {
 
   it('does not mutate the original uiSchema', () => {
     const fields: FormulaField[] = [
-      { path: ['total'], formula: 'a + b', contextMode: 'siblings' },
+      { path: ['total'], formula: 'a + b', contextMode: 'siblings', condition: true },
     ]
     const original = { total: { 'ui:widget': 'updown' } }
     const originalRef = original.total  // hold reference to nested object
@@ -80,7 +80,7 @@ describe('mergeReadOnly', () => {
 
   it('preserves existing items object when writing a tuple slot would conflict', () => {
     const fields: FormulaField[] = [
-      { path: ['rows', 0], formula: 'a + b', contextMode: 'siblings' },
+      { path: ['rows', 0], formula: 'a + b', contextMode: 'siblings', condition: true },
     ]
     const existing = { rows: { items: { 'ui:widget': 'updown' } } }
     // structuredClone the input so we can check the return value independently
@@ -91,7 +91,7 @@ describe('mergeReadOnly', () => {
 
   it('preserves existing items array when writing a uniform slot would conflict', () => {
     const fields: FormulaField[] = [
-      { path: ['rows', ARRAY_INDEX, 'total'], formula: 'a * b', contextMode: 'siblings' },
+      { path: ['rows', ARRAY_INDEX, 'total'], formula: 'a * b', contextMode: 'siblings', condition: true },
     ]
     const existing = { rows: { items: [{ 'ui:widget': 'foo' }] } }
     const result = mergeReadOnly(structuredClone(existing), fields)

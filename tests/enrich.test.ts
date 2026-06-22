@@ -72,7 +72,7 @@ const evalSimple = (formula: string, ctx: object) =>
 describe('enrich', () => {
   it('evaluates a single formula and returns enriched formData', async () => {
     const fields: FormulaField[] = [
-      { path: ['total'], formula: 'price * quantity', contextMode: 'siblings' },
+      { path: ['total'], formula: 'price * quantity', contextMode: 'siblings', condition: true },
     ]
     const result = await enrich({ price: 10, quantity: 3, total: 0 }, fields, evalSimple, 10, undefined)
     expect(result).toEqual({ price: 10, quantity: 3, total: 30 })
@@ -85,7 +85,7 @@ describe('enrich', () => {
 
   it('evaluates formulas for each array element independently', async () => {
     const fields: FormulaField[] = [
-      { path: ['items', ARRAY_INDEX, 'total'], formula: 'price * quantity', contextMode: 'siblings' },
+      { path: ['items', ARRAY_INDEX, 'total'], formula: 'price * quantity', contextMode: 'siblings', condition: true },
     ]
     const data = {
       items: [
@@ -100,8 +100,8 @@ describe('enrich', () => {
 
   it('converges when a computed field references another computed field', async () => {
     const fields: FormulaField[] = [
-      { path: ['double'], formula: 'base * 2', contextMode: 'siblings' },
-      { path: ['quad'], formula: 'double * 2', contextMode: 'siblings' },
+      { path: ['double'], formula: 'base * 2', contextMode: 'siblings', condition: true },
+      { path: ['quad'], formula: 'double * 2', contextMode: 'siblings', condition: true },
     ]
     const result = await enrich({ base: 5, double: 0, quad: 0 }, fields, evalSimple, 10, undefined) as any
     expect(result.double).toBe(10)
@@ -110,8 +110,8 @@ describe('enrich', () => {
 
   it('calls onFormulaError and sets field to undefined when evaluator throws', async () => {
     const fields: FormulaField[] = [
-      { path: ['bad'], formula: 'throw new Error("boom")', contextMode: 'siblings' },
-      { path: ['good'], formula: 'a + 1', contextMode: 'siblings' },
+      { path: ['bad'], formula: 'throw new Error("boom")', contextMode: 'siblings', condition: true },
+      { path: ['good'], formula: 'a + 1', contextMode: 'siblings', condition: true },
     ]
     const errors: Array<{ path: (string | number)[]; error: Error }> = []
     const result = await enrich(
@@ -129,7 +129,7 @@ describe('enrich', () => {
 
   it('calls onFormulaError and sets field to undefined on convergence failure', async () => {
     const fields: FormulaField[] = [
-      { path: ['x'], formula: 'x + 1', contextMode: 'siblings' },
+      { path: ['x'], formula: 'x + 1', contextMode: 'siblings', condition: true },
     ]
     const errors: Array<{ path: (string | number)[]; error: Error }> = []
     const result = await enrich(
@@ -147,7 +147,7 @@ describe('enrich', () => {
   it('resolves an async evaluator correctly', async () => {
     const asyncEval = async (formula: string, ctx: object) => evalSimple(formula, ctx)
     const fields: FormulaField[] = [
-      { path: ['total'], formula: 'price * quantity', contextMode: 'siblings' },
+      { path: ['total'], formula: 'price * quantity', contextMode: 'siblings', condition: true },
     ]
     const result = await enrich({ price: 4, quantity: 5, total: 0 }, fields, asyncEval, 10, undefined)
     expect(result).toEqual({ price: 4, quantity: 5, total: 20 })
@@ -161,8 +161,8 @@ describe('enrich', () => {
       return new Promise<number>(res => resolvers.push(res))
     }
     const fields: FormulaField[] = [
-      { path: ['x'], formula: 'formulaA', contextMode: 'siblings' },
-      { path: ['y'], formula: 'formulaB', contextMode: 'siblings' },
+      { path: ['x'], formula: 'formulaA', contextMode: 'siblings', condition: true },
+      { path: ['y'], formula: 'formulaB', contextMode: 'siblings', condition: true },
     ]
     const enrichPromise = enrich({ x: 1, y: 2 }, fields, delayedEval, 10, undefined)
     expect(called).toEqual(['formulaA', 'formulaB'])
@@ -176,8 +176,8 @@ describe('enrich', () => {
       return evalSimple(formula, ctx)
     }
     const fields: FormulaField[] = [
-      { path: ['bad'], formula: 'fail', contextMode: 'siblings' },
-      { path: ['good'], formula: 'a + 1', contextMode: 'siblings' },
+      { path: ['bad'], formula: 'fail', contextMode: 'siblings', condition: true },
+      { path: ['good'], formula: 'a + 1', contextMode: 'siblings', condition: true },
     ]
     const errors: Array<{ path: (string | number)[]; error: Error }> = []
     const result = await enrich(
@@ -196,8 +196,8 @@ describe('enrich', () => {
   it('converges across multiple passes with an async evaluator', async () => {
     const asyncEval = async (formula: string, ctx: object) => evalSimple(formula, ctx)
     const fields: FormulaField[] = [
-      { path: ['double'], formula: 'base * 2', contextMode: 'siblings' },
-      { path: ['quad'], formula: 'double * 2', contextMode: 'siblings' },
+      { path: ['double'], formula: 'base * 2', contextMode: 'siblings', condition: true },
+      { path: ['quad'], formula: 'double * 2', contextMode: 'siblings', condition: true },
     ]
     const result = await enrich({ base: 5, double: 0, quad: 0 }, fields, asyncEval, 10, undefined) as any
     expect(result.double).toBe(10)
