@@ -7,6 +7,10 @@ import type { BuildContextOptions } from './buildContext'
 
 export { ARRAY_INDEX }
 
+function formatPath(path: (string | number | ArrayIndex)[]): string {
+  return path.map(s => (typeof s === 'symbol' ? '[*]' : String(s))).join(', ')
+}
+
 export function getAt(data: unknown, path: (string | number)[]): unknown {
   return path.reduce<unknown>((curr, key) => {
     if (curr == null || typeof curr !== 'object') return undefined
@@ -134,11 +138,11 @@ export async function enrich(
     if (pathSeen.has(key)) {
       if (formulaConflictBehavior === 'error') {
         throw new TypeError(
-          `[rjsf-formulas] Formula conflict: two active fields share path [${field.path.join(', ')}]`
+          `[rjsf-formulas] Formula conflict: two active fields share path [${formatPath(field.path)}]`
         )
       } else if (formulaConflictBehavior === 'warn') {
         console.warn(
-          `[rjsf-formulas] Formula conflict: two active fields share path [${field.path.join(', ')}]; taking last`
+          `[rjsf-formulas] Formula conflict: two active fields share path [${formatPath(field.path)}]; taking last`
         )
       }
       // Replace the previous entry with the last one (take last)
