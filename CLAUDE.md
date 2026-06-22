@@ -30,6 +30,17 @@ Default label strings are used (needs-triage, needs-info, ready-for-agent, ready
 
 Single-context repo — one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
+## Testing — Red-Green TDD (REQUIRED)
+
+**Every code change must follow strict red-green TDD. This is non-negotiable.**
+
+1. **Write the test first** — before touching any implementation code.
+2. **Run the test and confirm it fails (red)** — if the test passes before the implementation exists, the test is wrong (it isn't actually testing what you think).
+3. **Write the minimum implementation to make the test pass (green).**
+4. **Commit only when green** — never commit a failing test unless it is the designated "red" checkpoint before the fix.
+
+This applies to bug fixes, new features, and edge cases alike. A test written after the implementation cannot prove the implementation is correct — it only proves the test and implementation agree.
+
 ## CHANGELOG
 
 Maintain `CHANGELOG.md` manually, following the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format (Unreleased section at top, semantic versioning, grouped by Added/Changed/Deprecated/Removed/Fixed/Security).
