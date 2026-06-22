@@ -7,9 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- Formula evaluation silently fails in apps using `<React.StrictMode>`: computed values are never applied and `onChange` is never called with enriched data. Root cause: two lifecycle refs (`isUnmountedRef`, `hasMountedRef`) were not reset on remount, causing the evaluation sequence to exit early after StrictMode's simulated unmount+remount cycle.
+## [0.2.0] - 2026-06-22
 
 ### Added
 
@@ -18,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - At evaluation time, `enrich` calls `validator.isValid(condition, formData, rootSchema)` to determine which fields are active; only active fields are evaluated.
 - `formulaConflictBehavior: 'ignore' | 'warn' | 'error'` option on `analyzeSchema` and prop on `FormulaForm` (default `'warn'`) — controls what happens when multiple simultaneously-active branches define a formula for the same path.
 - `formulaConflictBehavior: 'error'` throws a `TypeError` synchronously, intended as a developer tool for aggressive schema validation during development.
+
+### Fixed
+
+- Formula evaluation silently fails in apps using `<React.StrictMode>`: computed values are never applied and `onChange` is never called with enriched data. Root cause: two lifecycle refs (`isUnmountedRef`, `hasMountedRef`) were not reset on remount, causing the evaluation sequence to exit early after StrictMode's simulated unmount+remount cycle.
 
 ## [0.1.3] - 2026-06-22
 
@@ -57,7 +59,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `analyzeSchema` utility: scans a JSON Schema and returns all formula field descriptors.
 - All schema keys and context injection keys are configurable via props.
 
-[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.1.3...v0.2.0
+[0.1.3]: https://github.com/a-ludi/rjsf-formulas/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/a-ludi/rjsf-formulas/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/a-ludi/rjsf-formulas/releases/tag/v0.1.0
