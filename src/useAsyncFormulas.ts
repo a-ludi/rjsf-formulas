@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import type { FormulaField } from './analyzeSchema'
 import { expandPaths, enrich, deepEqual } from './enrich'
 import type { BuildContextOptions } from './buildContext'
+import type { RJSFSchema } from '@rjsf/utils'
 
 type FieldState = 'idle' | 'running' | 'dirty'
 
@@ -17,7 +18,9 @@ export function useAsyncFormulas(
   maxConvergencePasses: number,
   onFormulaError: ((path: (string | number)[], error: Error) => void) | undefined,
   onLoadingChange: ((loadingPaths: (string | number)[][]) => void) | undefined,
-  contextOptions: BuildContextOptions
+  contextOptions: BuildContextOptions,
+  checkCondition: (condition: RJSFSchema, formData: unknown) => boolean,
+  formulaConflictBehavior: 'ignore' | 'warn' | 'error'
 ): { enrichedFormData: unknown; handleInput: (newFormData: unknown) => void } {
   const [enrichedFormData, setEnrichedFormData] = useState<unknown>(formData)
 
@@ -34,9 +37,8 @@ export function useAsyncFormulas(
   const formulaFieldsRef = useRef(formulaFields)
   const maxPassesRef = useRef(maxConvergencePasses)
   const contextOptionsRef = useRef(contextOptions)
-  // Placeholder refs — Task 5 will wire these up from FormulaForm props
-  const checkConditionRef = useRef<(condition: object, formData: unknown) => boolean>(() => true)
-  const formulaConflictBehaviorRef = useRef<'ignore' | 'warn' | 'error'>('warn')
+  const checkConditionRef = useRef(checkCondition)
+  const formulaConflictBehaviorRef = useRef(formulaConflictBehavior)
 
   useEffect(() => { onFormulaErrorRef.current = onFormulaError }, [onFormulaError])
   useEffect(() => { onLoadingChangeRef.current = onLoadingChange }, [onLoadingChange])
@@ -44,6 +46,8 @@ export function useAsyncFormulas(
   useEffect(() => { formulaFieldsRef.current = formulaFields }, [formulaFields])
   useEffect(() => { maxPassesRef.current = maxConvergencePasses }, [maxConvergencePasses])
   useEffect(() => { contextOptionsRef.current = contextOptions }, [contextOptions])
+  useEffect(() => { checkConditionRef.current = checkCondition }, [checkCondition])
+  useEffect(() => { formulaConflictBehaviorRef.current = formulaConflictBehavior }, [formulaConflictBehavior])
 
   // startSequence reads all config from refs so it is stable across renders
   const startSequence = useCallback(() => {

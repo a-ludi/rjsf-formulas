@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef } from 'react'
+import React, { useMemo, useEffect, useRef, useCallback } from 'react'
 import Form from '@rjsf/core'
 import type { FormProps, IChangeEvent } from '@rjsf/core'
 import type { StrictRJSFSchema, RJSFSchema, FormContextType } from '@rjsf/utils'
@@ -84,6 +84,14 @@ export type FormulaFormProps<
    * @param loadingPaths - Paths of all fields whose evaluations are in progress.
    */
   onLoadingChange?: (loadingPaths: (string | number)[][]) => void
+
+  /**
+   * How to handle a formula field that also has a user-supplied value in `formData`.
+   * - `'ignore'` — silently use the formula result.
+   * - `'warn'` — log a console warning (default).
+   * - `'error'` — throw an error.
+   */
+  formulaConflictBehavior?: 'ignore' | 'warn' | 'error'
 }
 
 /**
@@ -130,6 +138,7 @@ export function FormulaForm<
   const {
     schema,
     formData,
+    validator,
     uiSchema,
     evaluator,
     Form: InnerForm = Form as React.ComponentType<FormProps<T, S, F>>,
@@ -141,6 +150,7 @@ export function FormulaForm<
     debounceMs = 300,
     onFormulaError,
     onLoadingChange,
+    formulaConflictBehavior = 'warn',
     onChange,
     ...rest
   } = props
@@ -160,6 +170,12 @@ export function FormulaForm<
     [uiSchema, formulaFields]
   )
 
+  const checkCondition = useCallback(
+    (condition: RJSFSchema, formData: unknown) =>
+      validator.isValid(condition as any, formData, schema as any),
+    [validator, schema]
+  )
+
   const { enrichedFormData, handleInput } = useAsyncFormulas(
     formData,
     formulaFields,
@@ -168,7 +184,9 @@ export function FormulaForm<
     maxConvergencePasses,
     onFormulaError,
     onLoadingChange,
-    contextOptions
+    contextOptions,
+    checkCondition,
+    formulaConflictBehavior
   )
 
   const onChangeRef = useRef(onChange)
