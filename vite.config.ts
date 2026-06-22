@@ -9,7 +9,7 @@ export default defineConfig({
       fileName: (format) => format === 'es' ? 'index.mjs' : 'index.cjs',
     },
     rollupOptions: {
-      external: ['react', '@rjsf/core', '@rjsf/utils'],
+      external: ['react', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'react-dom', '@rjsf/core', '@rjsf/utils'],
     },
   },
   plugins: [

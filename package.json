@@ -41,7 +41,8 @@
   "peerDependencies": {
     "@rjsf/core": ">=5",
     "@rjsf/utils": ">=5",
-    "react": ">=17"
+    "react": ">=17",
+    "react-dom": ">=17"
   },
   "devDependencies": {
     "@rjsf/core": "^6",
@@ -55,6 +56,9 @@
     "jsdom": "^29.1.1",
     "publint": "^0.3",
     "react": "^19",
+    "react-dom": "^19",
+    "react-dom18": "npm:react-dom@^18",
+    "react18": "npm:react@^18",
     "rjsf-core-v5": "npm:@rjsf/core@^5",
     "rjsf-utils-v5": "npm:@rjsf/utils@^5",
     "rjsf-validator-v5": "npm:@rjsf/validator-ajv8@^5",
@@ -65,8 +69,5 @@
     "vite-plugin-dts": "^4",
     "vitepress": "^1.6.4",
     "vitest": "^3"
-  },
-  "dependencies": {
-    "react-dom": "^19"
   }
 }

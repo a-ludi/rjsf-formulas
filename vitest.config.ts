@@ -14,6 +14,7 @@ export default defineConfig({
         test: {
           name: 'rjsf-v6-react',
           include: ['tests/**/*.test.tsx'],
+          exclude: ['tests/dist.smoke.react18.test.tsx'],
           environment: 'jsdom',
         },
       },
@@ -35,6 +36,7 @@ export default defineConfig({
         test: {
           name: 'rjsf-v5-react',
           include: ['tests/**/*.test.tsx'],
+          exclude: ['tests/dist.smoke.react18.test.tsx'],
           environment: 'jsdom',
           setupFiles: ['./tests/setup.rjsf-v5.ts'],
         },
@@ -44,6 +46,13 @@ export default defineConfig({
             '@rjsf/utils': 'rjsf-utils-v5',
             '@rjsf/validator-ajv8': 'rjsf-validator-v5',
           },
+        },
+      },
+      {
+        test: {
+          name: 'dist-react18',
+          include: ['tests/dist.smoke.react18.test.tsx'],
+          environment: 'node',
         },
       },
     ],

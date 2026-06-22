@@ -13,6 +13,7 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - run: bunx tsc --noEmit
+      - run: bun run build
       - run: bun run test
 
   publish:
