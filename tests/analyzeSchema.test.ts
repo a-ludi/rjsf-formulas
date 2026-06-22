@@ -96,12 +96,154 @@ describe('analyzeSchema — context modes', () => {
 })
 
 describe('analyzeSchema — composition operators', () => {
-  it('skips oneOf branches and emits a warning', () => {
+  it('recurses into oneOf branches (no formulas → empty result, no warning)', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const result = analyzeSchema(fixtures.withOneOfSchema as any)
     expect(result).toEqual([])
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('oneOf'))
+    expect(warnSpy).not.toHaveBeenCalled()
     warnSpy.mockRestore()
+  })
+})
+
+describe('analyzeSchema — oneOf / anyOf branches', () => {
+  it('collects fields from all branches of a oneOf', () => {
+    const schema = {
+      type: 'object',
+      oneOf: [
+        { properties: { a: { type: 'number', 'x-formula': 'b + 1' } } },
+        { properties: { b: { type: 'number', 'x-formula': 'a + 1' } } },
+      ],
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(2)
+    expect(result.map(f => f.path)).toEqual([['a'], ['b']])
+  })
+
+  it('sets condition to the branch schema for each field in a oneOf', () => {
+    const branch0 = { properties: { a: { type: 'number', 'x-formula': 'b + 1' } } }
+    const branch1 = { properties: { b: { type: 'number', 'x-formula': 'a + 1' } } }
+    const schema = { type: 'object', oneOf: [branch0, branch1] }
+    const result = analyzeSchema(schema as any)
+    expect(result[0].condition).toBe(branch0)
+    expect(result[1].condition).toBe(branch1)
+  })
+
+  it('collects from anyOf (same logic as oneOf)', () => {
+    const branch0 = { properties: { x: { type: 'number', 'x-formula': 'y * 2' } } }
+    const branch1 = { properties: { y: { type: 'number', 'x-formula': 'x / 2' } } }
+    const schema = { type: 'object', anyOf: [branch0, branch1] }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(2)
+    expect(result[0].condition).toBe(branch0)
+    expect(result[1].condition).toBe(branch1)
+  })
+
+  it('no conflict detection at analysis time — both branches collected even if same path', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const schema = {
+      type: 'object',
+      oneOf: [
+        { properties: { total: { type: 'number', 'x-formula': 'a + b' } } },
+        { properties: { total: { type: 'number', 'x-formula': 'a * b' } } },
+      ],
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(2)
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
+})
+
+describe('analyzeSchema — nested condition composition', () => {
+  it('field inside oneOf[0] gets condition: branchSchema (not true)', () => {
+    const branch = { properties: { a: { type: 'number', 'x-formula': 'b + 1' } } }
+    const schema = { type: 'object', oneOf: [branch] }
+    const result = analyzeSchema(schema as any)
+    expect(result[0].condition).toBe(branch)
+    expect(result[0].condition).not.toBe(true)
+  })
+
+  it('field inside allOf inside oneOf[0] gets condition: branchSchema (allOf does not add to condition)', () => {
+    const outerBranch = {
+      allOf: [
+        { properties: { a: { type: 'number', 'x-formula': 'b + 1' } } },
+      ],
+    }
+    const schema = { type: 'object', oneOf: [outerBranch] }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].condition).toBe(outerBranch)
+  })
+
+  it('field inside oneOf[1] inside oneOf[0] gets condition: { allOf: [outer, inner] }', () => {
+    const innerBranch = { properties: { a: { type: 'number', 'x-formula': 'b + 1' } } }
+    const outerBranch = {
+      properties: { x: { type: 'number' } },
+      oneOf: [innerBranch],
+    }
+    const schema = { type: 'object', oneOf: [outerBranch] }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].condition).toEqual({ allOf: [outerBranch, innerBranch] })
+  })
+
+  it('triple nesting composes allOf correctly', () => {
+    const innerBranch = { properties: { a: { type: 'number', 'x-formula': 'b' } } }
+    const midBranch = { oneOf: [innerBranch] }
+    const outerBranch = { oneOf: [midBranch] }
+    const schema = { oneOf: [outerBranch] }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(1)
+    // outer -> mid composes to { allOf: [outerBranch, midBranch] }
+    // then -> inner composes to { allOf: [outerBranch, midBranch, innerBranch] }
+    expect(result[0].condition).toEqual({ allOf: [outerBranch, midBranch, innerBranch] })
+  })
+})
+
+describe('analyzeSchema — $ref', () => {
+  it('resolves $ref and collects formula from referenced definition', () => {
+    const schema = {
+      type: 'object',
+      definitions: {
+        ComputedField: {
+          type: 'number',
+          'x-formula': 'a + b',
+        },
+      },
+      properties: {
+        a: { type: 'number' },
+        b: { type: 'number' },
+        total: { $ref: '#/definitions/ComputedField' },
+      },
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['total'])
+    expect(result[0].formula).toBe('a + b')
+    expect(result[0].condition).toBe(true)
+  })
+
+  it('$ref inside a oneOf branch inherits the branch condition', () => {
+    const branch = {
+      properties: {
+        total: { $ref: '#/definitions/ComputedField' },
+      },
+    }
+    const schema = {
+      type: 'object',
+      definitions: {
+        ComputedField: {
+          type: 'number',
+          'x-formula': 'a + b',
+        },
+      },
+      oneOf: [branch],
+    }
+    const result = analyzeSchema(schema as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['total'])
+    expect(result[0].formula).toBe('a + b')
+    expect(result[0].condition).toBe(branch)
   })
 })
 

@@ -1,4 +1,5 @@
 import type { RJSFSchema } from '@rjsf/utils'
+import { findSchemaDefinition } from '@rjsf/utils'
 
 /**
  * Sentinel used in formula field paths to represent a uniform array item position.
@@ -34,7 +35,8 @@ export type FormulaField = {
    * The schema condition under which this formula is active.
    *
    * - `true` — always active (fields from `properties`, `items`, `prefixItems`, or `allOf` branches).
-   * - `RJSFSchema` — a conditional schema (reserved for `oneOf`/`anyOf` branches introduced in later tasks).
+   * - `RJSFSchema` — a conditional schema (a `oneOf`/`anyOf` branch condition, possibly composed
+   *   via `{ allOf: [...] }` for nested branches).
    */
   condition: RJSFSchema | true
 }
@@ -61,9 +63,11 @@ export type AnalyzeSchemaOptions = {
  * Scans a JSON Schema and returns descriptors for every field that carries a formula key.
  *
  * @remarks
- * Traversal is depth-first. `allOf` branches are fully supported. Schema composition
- * operators `$ref`, `oneOf`, and `anyOf` are not yet supported and emit a `console.warn`
- * when encountered.
+ * Traversal is depth-first. `allOf`, `$ref`, `oneOf`, and `anyOf` are all supported.
+ * `allOf` branches are merged with conflict detection. `oneOf`/`anyOf` branches are each
+ * recursed and fields are collected with the branch schema as the `condition`. Nested
+ * `oneOf`/`anyOf` conditions are composed via `{ allOf: [...] }`. `$ref` is resolved
+ * synchronously using `findSchemaDefinition` (external refs will throw).
  *
  * @param schema - The root RJSF schema to scan.
  * @param options - Optional key overrides for locating formulas in the schema.
@@ -92,11 +96,25 @@ export function analyzeSchema(
   const formulaContextKey = options?.formulaContextKey ?? 'x-formula-context'
   const formulaConflictBehavior = options?.formulaConflictBehavior ?? 'warn'
   const fields: FormulaField[] = []
-  traverse(schema, [], fields, formulaKey, formulaContextKey, formulaConflictBehavior)
+  traverse(schema, [], fields, formulaKey, formulaContextKey, formulaConflictBehavior, true, schema)
   return fields
 }
 
-const UNSUPPORTED_COMPOSITION_KEYS = ['$ref', 'oneOf', 'anyOf'] as const
+/**
+ * Compose an ambient condition with a new branch schema.
+ *
+ * - If `ambient === true`: returns `branch` directly (no wrapping needed).
+ * - If `ambient` already has an `allOf`: appends `branch` to that array.
+ * - Otherwise: wraps both in `{ allOf: [ambient, branch] }`.
+ */
+function composeCondition(ambient: RJSFSchema | true, branch: RJSFSchema): RJSFSchema {
+  if (ambient === true) return branch
+  const ambientAny = ambient as Record<string, unknown>
+  if (Array.isArray(ambientAny['allOf'])) {
+    return { allOf: [...(ambientAny['allOf'] as RJSFSchema[]), branch] }
+  }
+  return { allOf: [ambient, branch] }
+}
 
 function resolveContextMode(
   value: unknown,
@@ -159,17 +177,17 @@ function traverse(
   fields: FormulaField[],
   formulaKey: string,
   formulaContextKey: string,
-  formulaConflictBehavior: 'ignore' | 'warn' | 'error'
+  formulaConflictBehavior: 'ignore' | 'warn' | 'error',
+  ambientCondition: RJSFSchema | true,
+  rootSchema: RJSFSchema
 ): void {
   const schemaAny = schema as Record<string, unknown>
 
-  // Warn on unsupported composition operators (issue 06)
-  for (const key of UNSUPPORTED_COMPOSITION_KEYS) {
-    if (key in schema) {
-      console.warn(
-        `[rjsf-formulas] Schema composition operator "${key}" at path [${formatPath(path)}] is not supported and will be skipped. See issue 06.`
-      )
-    }
+  // $ref — resolve and continue traversal with the same ambientCondition
+  if (typeof schemaAny['$ref'] === 'string') {
+    const resolved = findSchemaDefinition(schemaAny['$ref'] as string, rootSchema)
+    traverse(resolved, path, fields, formulaKey, formulaContextKey, formulaConflictBehavior, ambientCondition, rootSchema)
+    return
   }
 
   // Rule 1: computed field — record and stop
@@ -185,7 +203,7 @@ function traverse(
       path,
       formula,
       contextMode: resolveContextMode(schemaAny[formulaContextKey], path),
-      condition: true,
+      condition: ambientCondition,
     })
     return
   }
@@ -199,7 +217,9 @@ function traverse(
         fields,
         formulaKey,
         formulaContextKey,
-        formulaConflictBehavior
+        formulaConflictBehavior,
+        ambientCondition,
+        rootSchema
       )
     }
   }
@@ -210,7 +230,7 @@ function traverse(
     if (Array.isArray(schemaAny['prefixItems'])) {
       const prefixItems = schemaAny['prefixItems'] as RJSFSchema[]
       prefixItems.forEach((itemSchema, index) => {
-        traverse(itemSchema, [...path, index], fields, formulaKey, formulaContextKey, formulaConflictBehavior)
+        traverse(itemSchema, [...path, index], fields, formulaKey, formulaContextKey, formulaConflictBehavior, ambientCondition, rootSchema)
       })
     }
 
@@ -222,18 +242,32 @@ function traverse(
         fields,
         formulaKey,
         formulaContextKey,
-        formulaConflictBehavior
+        formulaConflictBehavior,
+        ambientCondition,
+        rootSchema
       )
     }
   }
 
   // Rule 4: allOf — recurse into each branch, then merge with conflict detection
+  // allOf does not add to the condition — branches are always active within their parent's condition
   if (Array.isArray(schemaAny['allOf'])) {
     const allOfBranches = schemaAny['allOf'] as RJSFSchema[]
     for (const branch of allOfBranches) {
       const branchFields: FormulaField[] = []
-      traverse(branch, path, branchFields, formulaKey, formulaContextKey, formulaConflictBehavior)
+      traverse(branch, path, branchFields, formulaKey, formulaContextKey, formulaConflictBehavior, ambientCondition, rootSchema)
       mergeFields(fields, branchFields, formulaConflictBehavior)
+    }
+  }
+
+  // Rule 5: oneOf / anyOf — recurse each branch with a composed condition
+  for (const compositionKey of ['oneOf', 'anyOf'] as const) {
+    if (Array.isArray(schemaAny[compositionKey])) {
+      const branches = schemaAny[compositionKey] as RJSFSchema[]
+      for (const branch of branches) {
+        const branchCondition = composeCondition(ambientCondition, branch)
+        traverse(branch, path, fields, formulaKey, formulaContextKey, formulaConflictBehavior, branchCondition, rootSchema)
+      }
     }
   }
 }
