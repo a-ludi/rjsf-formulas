@@ -32,7 +32,9 @@ describe('useAsyncFormulas — debounce', () => {
         10,
         undefined,
         undefined,
-        ctxOpts
+        ctxOpts,
+        () => true,
+        'warn'
       )
     )
     expect((result.current.enrichedFormData as any).total).toBe(0)
@@ -50,7 +52,9 @@ describe('useAsyncFormulas — debounce', () => {
         10,
         undefined,
         undefined,
-        ctxOpts
+        ctxOpts,
+        () => true,
+        'warn'
       )
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
@@ -70,7 +74,9 @@ describe('useAsyncFormulas — debounce', () => {
         10,
         undefined,
         undefined,
-        ctxOpts
+        ctxOpts,
+        () => true,
+        'warn'
       )
     )
     // Wait for initial evaluation
@@ -102,7 +108,9 @@ describe('useAsyncFormulas — debounce', () => {
         10,
         undefined,
         undefined,
-        ctxOpts
+        ctxOpts,
+        () => true,
+        'warn'
       )
     )
     // Wait for initial evaluation
@@ -137,7 +145,9 @@ describe('useAsyncFormulas — onLoadingChange', () => {
         10,
         undefined,
         onLoadingChange,
-        ctxOpts
+        ctxOpts,
+        () => true,
+        'warn'
       )
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
@@ -168,7 +178,9 @@ describe('useAsyncFormulas — error handling', () => {
         10,
         onFormulaError,
         undefined,
-        ctxOpts
+        ctxOpts,
+        () => true,
+        'warn'
       )
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
@@ -185,7 +197,7 @@ describe('useAsyncFormulas — external formData prop', () => {
     const fields = [field(['total'], 'price * quantity')]
     let currentFormData: unknown = { price: 2, quantity: 3, total: 0 }
     const { result, rerender } = renderHook(() =>
-      useAsyncFormulas(currentFormData, fields, evalSimple, 300, 10, undefined, undefined, ctxOpts)
+      useAsyncFormulas(currentFormData, fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn')
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
     expect((result.current.enrichedFormData as any).total).toBe(6)
@@ -222,7 +234,9 @@ describe('useAsyncFormulas — dirty state (in-flight re-evaluation)', () => {
         10,
         undefined,
         undefined,
-        ctxOpts
+        ctxOpts,
+        () => true,
+        'warn'
       )
     )
 
@@ -278,7 +292,9 @@ describe('useAsyncFormulas — dirty state (in-flight re-evaluation)', () => {
         10,
         undefined,
         undefined,
-        ctxOpts
+        ctxOpts,
+        () => true,
+        'warn'
       )
     )
 
@@ -327,7 +343,9 @@ describe('useAsyncFormulas — unmount during evaluation', () => {
         10,
         undefined,
         onLoadingChange,
-        ctxOpts
+        ctxOpts,
+        () => true,
+        'warn'
       )
     )
 
@@ -361,7 +379,9 @@ describe('useAsyncFormulas — convergence limit', () => {
         3,
         onFormulaError,
         undefined,
-        ctxOpts
+        ctxOpts,
+        () => true,
+        'warn'
       )
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
