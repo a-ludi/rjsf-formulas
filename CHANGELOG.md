@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-23
+
 ### Fixed
 
 - `analyzeSchema` now detects formulas inside array schemas that omit an explicit `type: 'array'` declaration. RJSF infers array type from the presence of `items` or `prefixItems`; the library now does the same.
@@ -69,7 +71,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `analyzeSchema` utility: scans a JSON Schema and returns all formula field descriptors.
 - All schema keys and context injection keys are configurable via props.
 
-[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/a-ludi/rjsf-formulas/compare/v0.1.2...v0.1.3
