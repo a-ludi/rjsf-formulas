@@ -501,6 +501,25 @@ describe('FormulaForm — composite schemas', () => {
   })
 })
 
+describe('FormulaForm — ref forwarding', () => {
+  it('exposes the inner Form API via ref — validateForm() returns true for valid data', async () => {
+    vi.useFakeTimers()
+    const ref = React.createRef<Form>()
+    render(
+      <FormulaForm
+        ref={ref}
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(ref.current).not.toBeNull()
+    expect(ref.current!.validateForm()).toBe(true)
+  })
+})
+
 describe('FormulaForm — React StrictMode compatibility', () => {
   it('calls onChange with enriched formData after initial evaluation in StrictMode', async () => {
     vi.useFakeTimers()

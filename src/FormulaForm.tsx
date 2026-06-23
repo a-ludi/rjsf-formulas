@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef, useCallback } from 'react'
+import React, { useMemo, useEffect, useRef, useCallback, forwardRef } from 'react'
 import Form from '@rjsf/core'
 import type { FormProps, IChangeEvent } from '@rjsf/core'
 import type { StrictRJSFSchema, RJSFSchema, FormContextType } from '@rjsf/utils'
@@ -132,11 +132,11 @@ export type FormulaFormProps<
  * }
  * ```
  */
-export function FormulaForm<
+function FormulaFormImpl<
   T = any,
   S extends StrictRJSFSchema = RJSFSchema,
   F extends FormContextType = any
->(props: FormulaFormProps<T, S, F>): JSX.Element {
+>(props: FormulaFormProps<T, S, F>, ref: React.Ref<Form<T, S, F>>): JSX.Element {
   const {
     schema,
     formData,
@@ -206,6 +206,7 @@ export function FormulaForm<
 
   return (
     <InnerForm
+      ref={ref as any}
       {...rest}
       schema={schema}
       validator={validator}
@@ -215,3 +216,9 @@ export function FormulaForm<
     />
   )
 }
+
+export const FormulaForm = forwardRef(FormulaFormImpl) as <
+  T = any,
+  S extends StrictRJSFSchema = RJSFSchema,
+  F extends FormContextType = any
+>(props: FormulaFormProps<T, S, F>) => JSX.Element

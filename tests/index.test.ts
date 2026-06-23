@@ -9,6 +9,7 @@ describe('Public API', () => {
 
   it('exports FormulaForm component', () => {
     expect(FormulaForm).toBeDefined()
-    expect(typeof FormulaForm).toBe('function')
+    // forwardRef() returns an object, not a function
+    expect(typeof FormulaForm).toMatch(/^(function|object)$/)
   })
 })
