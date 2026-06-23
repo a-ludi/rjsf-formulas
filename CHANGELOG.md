@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `analyzeSchema` now detects formulas inside array schemas that omit an explicit `type: 'array'` declaration. RJSF infers array type from the presence of `items` or `prefixItems`; the library now does the same.
+
 ## [0.3.0] - 2026-06-23
 
 ### Fixed

@@ -143,3 +143,30 @@ export const withOneOfSchema = {
     { properties: { kind: { type: 'string', enum: ['a'] } } },
   ],
 } as const
+
+export const arrayWithItemsNoType = {
+  type: 'object',
+  properties: {
+    items: {
+      items: {
+        type: 'object',
+        properties: {
+          price: { type: 'number' },
+          total: { type: 'number', 'x-formula': 'price * 2' },
+        },
+      },
+    },
+  },
+} as const
+
+export const arrayWithPrefixItemsNoType = {
+  type: 'object',
+  properties: {
+    tuple: {
+      prefixItems: [
+        { type: 'number' },
+        { type: 'number', 'x-formula': 'a + 1' },
+      ],
+    },
+  },
+} as const

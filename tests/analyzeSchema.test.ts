@@ -40,6 +40,21 @@ describe('analyzeSchema — array items', () => {
     expect(result).toHaveLength(1)
     expect(result[0].path).toEqual(['items', ARRAY_INDEX, 'total'])
   })
+
+  it('detects formulas in uniform array items when type is omitted', () => {
+    const result = analyzeSchema(fixtures.arrayWithItemsNoType as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['items', ARRAY_INDEX, 'total'])
+  })
+})
+
+describe('analyzeSchema — arrays without explicit type', () => {
+  it('detects formulas in prefixItems tuple slots when type is omitted', () => {
+    const result = analyzeSchema(fixtures.arrayWithPrefixItemsNoType as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['tuple', 1])
+    expect(result[0].formula).toBe('a + 1')
+  })
 })
 
 describe('analyzeSchema — prefixItems and combined arrays', () => {

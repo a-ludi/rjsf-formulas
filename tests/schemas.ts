@@ -228,6 +228,25 @@ export const refResolved: DemoSchema = {
   formData: { item: { price: 5, qty: 3, total: 0 } },
 }
 
+export const arrayItemsNoType: DemoSchema = {
+  label: 'Array items (no explicit type)',
+  schema: {
+    type: 'object',
+    properties: {
+      items: {
+        items: {
+          type: 'object',
+          properties: {
+            price: { type: 'number' },
+            total: { type: 'number', 'x-formula': 'price * 2' },
+          },
+        },
+      },
+    },
+  } as unknown as RJSFSchema,
+  formData: { items: [{ price: 5, total: 0 }] },
+}
+
 export const errorHandling: DemoSchema = {
   label: 'Error handling',
   schema: {

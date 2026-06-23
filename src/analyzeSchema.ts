@@ -209,7 +209,9 @@ function traverse(
   }
 
   // Rule 2: object — recurse into properties (type: 'object' is implicit when properties are present)
-  if (schema.properties && schema.type !== 'array') {
+  const isArray = schema.type === 'array' ||
+    (schema.type == null && (Array.isArray(schemaAny['prefixItems']) || (schema.items != null && !Array.isArray(schema.items))))
+  if (schema.properties && !isArray) {
     for (const [key, propSchema] of Object.entries(schema.properties)) {
       traverse(
         propSchema as RJSFSchema,
@@ -224,8 +226,8 @@ function traverse(
     }
   }
 
-  // Rule 3: array — recurse into prefixItems and/or items
-  if (schema.type === 'array') {
+  // Rule 3: array — recurse into prefixItems and/or items (type: 'array' is implicit when items/prefixItems are present)
+  if (isArray) {
     // Rule 3a: prefixItems (tuple positions with static indices)
     if (Array.isArray(schemaAny['prefixItems'])) {
       const prefixItems = schemaAny['prefixItems'] as RJSFSchema[]
