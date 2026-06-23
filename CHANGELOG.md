@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- GitHub Actions: bump `actions/checkout` from v4 to v6 and `actions/setup-node` from v4 to v6 — both now run on Node.js 24, eliminating the Node 20 deprecation warnings in CI. (`actions/deploy-pages` and `actions/upload-pages-artifact` remain at their current versions pending upstream Node.js 24 releases.)
+- Husky pre-push hook: remove legacy v8-era shebang and `_/husky.sh` source line, which Husky v10 will reject.
+- `package.json`: prefix `repository.url` with `git+` to satisfy publint.
+
 ## [0.3.1] - 2026-06-23
 
 ### Fixed
