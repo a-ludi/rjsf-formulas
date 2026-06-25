@@ -259,3 +259,29 @@ export const errorHandling: DemoSchema = {
   } as unknown as RJSFSchema,
   formData: { a: 5, bad: 0, good: 0 },
 }
+
+export const legacyTupleItems: DemoSchema = {
+  label: 'Legacy tuple items (draft-07 items array)',
+  schema: {
+    type: 'object',
+    properties: {
+      list_of_x_diffs: {
+        type: 'array',
+        items: [
+          {
+            type: 'object',
+            properties: {
+              x_before: { type: 'number', minimum: 0 },
+              x_after: { type: 'number', minimum: 0 },
+              x_diff: { type: 'number', minimum: 0, 'x-formula': 'round(x_after - x_before, 4)' },
+            },
+            required: ['x_before', 'x_after', 'x_diff'],
+          },
+        ],
+        additionalItems: false,
+      },
+    },
+    required: ['list_of_x_diffs'],
+  } as unknown as RJSFSchema,
+  formData: { list_of_x_diffs: [{ x_before: 1.5, x_after: 3.7, x_diff: 0 }] },
+}

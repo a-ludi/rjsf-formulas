@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `analyzeSchema` now traverses the legacy draft-07 tuple form of `items` (when `items` is an array of schemas). Previously only `prefixItems` and `items` as an object were handled; schemas using `items: [{...}, ...]` had their formula fields silently skipped (fixes [#3](https://github.com/a-ludi/rjsf-formulas/issues/3)).
+
 ## [0.4.0] - 2026-06-25
 
 ### Added

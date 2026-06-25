@@ -170,3 +170,22 @@ export const arrayWithPrefixItemsNoType = {
     },
   },
 } as const
+
+export const legacyTupleItems = {
+  type: 'object',
+  properties: {
+    list: {
+      type: 'array',
+      items: [
+        {
+          type: 'object',
+          properties: {
+            a: { type: 'number' },
+            b: { type: 'number' },
+            sum: { type: 'number', 'x-formula': 'a + b' },
+          },
+        },
+      ],
+    },
+  },
+} as const

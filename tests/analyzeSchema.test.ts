@@ -528,3 +528,13 @@ describe('analyzeSchema — allOf conflict detection', () => {
       .toThrow(expect.objectContaining({ message: expect.stringContaining('a + b') }))
   })
 })
+
+describe('analyzeSchema — legacy tuple items (items as array)', () => {
+  it('discovers formulas in draft-07 tuple form (items as array)', () => {
+    const result = analyzeSchema(fixtures.legacyTupleItems as any)
+    expect(result).toHaveLength(1)
+    expect(result[0].path).toEqual(['list', 0, 'sum'])
+    expect(result[0].formula).toBe('a + b')
+    expect(result[0].condition).toBe(true)
+  })
+})
