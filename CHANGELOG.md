@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-25
+
 ### Fixed
 
 - `analyzeSchema` now traverses the legacy draft-07 tuple form of `items` (when `items` is an array of schemas). Previously only `prefixItems` and `items` as an object were handled; schemas using `items: [{...}, ...]` had their formula fields silently skipped (fixes [#3](https://github.com/a-ludi/rjsf-formulas/issues/3)).
@@ -89,7 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `analyzeSchema` utility: scans a JSON Schema and returns all formula field descriptors.
 - All schema keys and context injection keys are configurable via props.
 
-[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.0...v0.3.1
