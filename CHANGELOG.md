@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-25
+
 ### Added
 
 - Source maps (`index.mjs.map`, `index.cjs.map`) are now included in the published package, enabling debugger step-through into library source.
@@ -83,7 +85,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `analyzeSchema` utility: scans a JSON Schema and returns all formula field descriptors.
 - All schema keys and context injection keys are configurable via props.
 
-[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.2.0...v0.3.0
