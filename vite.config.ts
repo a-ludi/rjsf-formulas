@@ -8,6 +8,7 @@ export default defineConfig({
       formats: ['es', 'cjs'],
       fileName: (format) => format === 'es' ? 'index.mjs' : 'index.cjs',
     },
+    sourcemap: true,
     rollupOptions: {
       external: ['react', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'react-dom', '@rjsf/core', '@rjsf/utils'],
     },
