@@ -94,6 +94,18 @@ export type FormulaFormProps<
    * - `'error'` — throw a `TypeError` synchronously (useful during development).
    */
   formulaConflictBehavior?: 'ignore' | 'warn' | 'error'
+
+  /**
+   * Controls what happens when the component mounts and runs its first formula evaluation pass.
+   *
+   * - `'always'` (default): evaluate on mount and call `onChange` with the enriched result.
+   * - `'skip'`: skip evaluation on mount entirely; the form renders with the initial `formData` values as-is.
+   * - `'silent'`: evaluate on mount (so the UI shows correct values), but do not call `onChange`.
+   *   User edits trigger `onChange` normally from that point on.
+   *
+   * `onFormulaError` and `onLoadingChange` fire normally regardless of mode.
+   */
+  initialComputationMode?: 'always' | 'skip' | 'silent'
 }
 
 /**
@@ -153,6 +165,7 @@ function FormulaFormImpl<
     onFormulaError,
     onLoadingChange,
     formulaConflictBehavior = 'warn',
+    initialComputationMode = 'always',
     onChange,
     ...rest
   } = props
@@ -178,6 +191,21 @@ function FormulaFormImpl<
     [validator, schema]
   )
 
+  const suppressCountRef = useRef(
+    initialComputationMode === 'always' ? 0 :
+    initialComputationMode === 'silent' ? 2 : 1
+  )
+
+  // Reset suppression counter on every (re)mount so StrictMode's simulated
+  // unmount+remount cycle starts each phase fresh.
+  useEffect(() => {
+    const count =
+      initialComputationMode === 'always' ? 0 :
+      initialComputationMode === 'silent' ? 2 : 1
+    suppressCountRef.current = count
+    return () => { suppressCountRef.current = count }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const { enrichedFormData, handleInput } = useAsyncFormulas(
     formData,
     formulaFields,
@@ -188,7 +216,8 @@ function FormulaFormImpl<
     onLoadingChange,
     contextOptions,
     checkCondition,
-    formulaConflictBehavior
+    formulaConflictBehavior,
+    initialComputationMode
   )
 
   const onChangeRef = useRef(onChange)
@@ -196,6 +225,10 @@ function FormulaFormImpl<
 
   useEffect(() => {
     if (formulaFields.length === 0) return
+    if (suppressCountRef.current > 0) {
+      suppressCountRef.current--
+      return
+    }
     onChangeRef.current?.({ formData: enrichedFormData as T } as IChangeEvent<T, S, F>, undefined)
   }, [enrichedFormData]) // eslint-disable-line react-hooks/exhaustive-deps
 

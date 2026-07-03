@@ -20,7 +20,8 @@ export function useAsyncFormulas(
   onLoadingChange: ((loadingPaths: (string | number)[][]) => void) | undefined,
   contextOptions: BuildContextOptions,
   checkCondition: (condition: RJSFSchema, formData: unknown) => boolean,
-  formulaConflictBehavior: 'ignore' | 'warn' | 'error'
+  formulaConflictBehavior: 'ignore' | 'warn' | 'error',
+  initialComputationMode: 'always' | 'skip' | 'silent'
 ): { enrichedFormData: unknown; handleInput: (newFormData: unknown) => void } {
   const [enrichedFormData, setEnrichedFormData] = useState<unknown>(formData)
 
@@ -143,10 +144,11 @@ export function useAsyncFormulas(
   const isUnmountedRef = useRef(false)
   useEffect(() => {
     if (!hasMountedRef.current) {
-      // Initial mount: always trigger evaluation
       hasMountedRef.current = true
       lastExternalFormDataRef.current = formData
-      handleInput(formData)
+      if (initialComputationMode !== 'skip') {
+        handleInput(formData)
+      }
     } else if (!deepEqual(formData, lastExternalFormDataRef.current)) {
       // Subsequent renders: only trigger on actual value change
       lastExternalFormDataRef.current = formData
