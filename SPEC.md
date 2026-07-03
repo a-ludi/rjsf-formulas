@@ -46,6 +46,9 @@ type FormulaFormProps<T, S extends StrictRJSFSchema, F extends FormContextType> 
     maxConvergencePasses?: number // default: 10
     debounceMs?: number           // default: 300
 
+    // Initial computation control
+    initialComputationMode?: 'always' | 'skip' | 'silent'  // default: 'always'
+
     // Callbacks
     onFormulaError?: (path: (string | number)[], error: Error) => void
     onLoadingChange?: (loadingPaths: (string | number)[][]) => void
@@ -145,7 +148,23 @@ The parent remains the source of truth. `FormulaForm` does not own state — it 
 
 ### Mount behaviour
 
-On mount, `FormulaForm` always recomputes all formula fields (ignoring any saved values in the initial `formData`) and immediately fires the parent's `onChange` with the enriched result. The formula is always authoritative.
+`initialComputationMode` controls what happens on the first formula evaluation pass:
+
+| Mode | Evaluate on mount? | Call `onChange` on mount? |
+|---|---|---|
+| `'always'` (default) | yes | yes |
+| `'skip'` | no | no |
+| `'silent'` | yes | no |
+
+**`'always'`**: all formula fields are recomputed and `onChange` is called with the enriched result. The formula is always authoritative over any saved values in the initial `formData`.
+
+**`'skip'`**: no evaluation on mount. The form renders with the initial `formData` values as-is. Useful when the consumer has already-correct saved data and wants to avoid an unsolicited `onChange` call on load.
+
+**`'silent'`**: evaluation runs so the UI immediately shows correct computed values, but `onChange` is not called. Useful when the consumer wants the form to display correct values without marking the form as dirty. The parent's state and the form's displayed values are momentarily out of sync; this resolves on the first user edit.
+
+`onFormulaError` and `onLoadingChange` fire normally regardless of mode.
+
+"Initial computation" is strictly the first evaluation on mount. External `formData` changes from the parent after mount always trigger normal evaluation and `onChange` regardless of mode.
 
 ### Read-only injection
 

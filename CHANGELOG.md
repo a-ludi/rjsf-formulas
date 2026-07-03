@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `initialComputationMode` prop on `FormulaForm` (`'always'` | `'skip'` | `'silent'`, default `'always'`): controls the initial formula evaluation on mount. `'always'` preserves existing behaviour (evaluate and fire `onChange`); `'skip'` skips evaluation entirely; `'silent'` evaluates so the UI shows correct values but does not fire `onChange`.
+
 ## [0.4.1] - 2026-06-25
 
 ### Fixed
