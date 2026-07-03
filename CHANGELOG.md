@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-03
+
 ### Added
 
 - `initialComputationMode` prop on `FormulaForm` (`'always'` | `'skip'` | `'silent'`, default `'always'`): controls the initial formula evaluation on mount. `'always'` preserves existing behaviour (evaluate and fire `onChange`); `'skip'` skips evaluation entirely; `'silent'` evaluates so the UI shows correct values but does not fire `onChange`.
@@ -95,7 +97,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `analyzeSchema` utility: scans a JSON Schema and returns all formula field descriptors.
 - All schema keys and context injection keys are configurable via props.
 
-[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.1...v0.3.2
