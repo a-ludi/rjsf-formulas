@@ -146,6 +146,7 @@ export function useAsyncFormulas(
     if (!hasMountedRef.current) {
       hasMountedRef.current = true
       lastExternalFormDataRef.current = formData
+      // Read from param directly (not a ref) — this branch only executes once on mount.
       if (initialComputationMode !== 'skip') {
         handleInput(formData)
       }

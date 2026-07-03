@@ -191,19 +191,20 @@ function FormulaFormImpl<
     [validator, schema]
   )
 
-  const suppressCountRef = useRef(
+  const suppressCount =
     initialComputationMode === 'always' ? 0 :
-    initialComputationMode === 'silent' ? 2 : 1
-  )
+    initialComputationMode === 'skip' ? 1 : 2
 
-  // Reset suppression counter on every (re)mount so StrictMode's simulated
-  // unmount+remount cycle starts each phase fresh.
+  const suppressCountRef = useRef(suppressCount)
+
+  // Reset the suppression counter on every (re)mount. This runs before the
+  // enrichedFormData effect (React fires effects in source order), so the
+  // counter is always fresh when the enrichedFormData effect reads it.
+  // The cleanup restores it on StrictMode's simulated unmount so the
+  // re-mount phase starts with a full count.
   useEffect(() => {
-    const count =
-      initialComputationMode === 'always' ? 0 :
-      initialComputationMode === 'silent' ? 2 : 1
-    suppressCountRef.current = count
-    return () => { suppressCountRef.current = count }
+    suppressCountRef.current = suppressCount
+    return () => { suppressCountRef.current = suppressCount }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { enrichedFormData, handleInput } = useAsyncFormulas(
