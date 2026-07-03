@@ -543,3 +543,178 @@ describe('FormulaForm — React StrictMode compatibility', () => {
     )
   })
 })
+
+describe('FormulaForm — initialComputationMode: skip', () => {
+  it('does not call onChange on mount', async () => {
+    vi.useFakeTimers()
+    const onChange = vi.fn()
+    render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        onChange={onChange}
+        initialComputationMode="skip"
+        Form={vi.fn(() => <div />) as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('renders original formData without enrichment', async () => {
+    vi.useFakeTimers()
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
+    render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        initialComputationMode="skip"
+        Form={MockForm as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData).toEqual({ price: 10, quantity: 3, total: 0 })
+  })
+
+  it('calls onChange normally after a user edit', async () => {
+    vi.useFakeTimers()
+    const onChange = vi.fn()
+    const MockForm = vi.fn(({ onChange: innerOnChange }: any) => (
+      <button onClick={() => innerOnChange({ formData: { price: 5, quantity: 4, total: 0 } })}>
+        change
+      </button>
+    ))
+    const { getByText } = render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        onChange={onChange}
+        initialComputationMode="skip"
+        Form={MockForm as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    onChange.mockClear()
+    act(() => { getByText('change').click() })
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ formData: { price: 5, quantity: 4, total: 20 } }),
+      undefined
+    )
+  })
+})
+
+describe('FormulaForm — initialComputationMode: silent', () => {
+  it('does not call onChange on mount', async () => {
+    vi.useFakeTimers()
+    const onChange = vi.fn()
+    render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        onChange={onChange}
+        initialComputationMode="silent"
+        Form={vi.fn(() => <div />) as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('enriches the inner form formData after mount', async () => {
+    vi.useFakeTimers()
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
+    render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        initialComputationMode="silent"
+        Form={MockForm as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData).toEqual({ price: 10, quantity: 3, total: 30 })
+  })
+
+  it('calls onChange normally after a user edit', async () => {
+    vi.useFakeTimers()
+    const onChange = vi.fn()
+    const MockForm = vi.fn(({ onChange: innerOnChange }: any) => (
+      <button onClick={() => innerOnChange({ formData: { price: 5, quantity: 4, total: 30 } })}>
+        change
+      </button>
+    ))
+    const { getByText } = render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        onChange={onChange}
+        initialComputationMode="silent"
+        Form={MockForm as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    onChange.mockClear()
+    act(() => { getByText('change').click() })
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ formData: { price: 5, quantity: 4, total: 20 } }),
+      undefined
+    )
+  })
+
+  it('still calls onFormulaError during initial evaluation', async () => {
+    vi.useFakeTimers()
+    const onFormulaError = vi.fn()
+    const brokenEval = (formula: string, ctx: object) => {
+      if (formula === 'throw_error') throw new Error('boom')
+      return evalSimple(formula, ctx)
+    }
+    render(
+      <FormulaForm
+        schema={errorHandling.schema as any}
+        formData={errorHandling.formData as any}
+        validator={validator}
+        evaluator={brokenEval}
+        initialComputationMode="silent"
+        onFormulaError={onFormulaError}
+        Form={vi.fn(() => <div />) as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onFormulaError).toHaveBeenCalledWith(['bad'], expect.any(Error))
+  })
+
+  it('still calls onLoadingChange during initial evaluation', async () => {
+    vi.useFakeTimers()
+    const onLoadingChange = vi.fn()
+    render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        initialComputationMode="silent"
+        onLoadingChange={onLoadingChange}
+        Form={vi.fn(() => <div />) as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onLoadingChange).toHaveBeenCalledWith([['total']])
+    expect(onLoadingChange).toHaveBeenCalledWith([])
+  })
+})
