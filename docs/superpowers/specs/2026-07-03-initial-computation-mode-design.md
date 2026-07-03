@@ -74,3 +74,23 @@ A `suppressInitialOnChangeRef` (boolean ref, starts `true` for `'skip'` and `'si
   - **`'skip'`**: flip immediately on first effect run (no evaluation will follow).
   - **`'silent'`**: flip after the initial evaluation result has been processed (i.e. after `enrichedFormData` first differs from the original `formData`).
 - All subsequent effect fires call `onChange` normally.
+
+---
+
+## Tests
+
+New test cases in `tests/FormulaForm.test.tsx`, one per mode:
+
+- **`'always'`** (existing behavior, verify it still works): `onChange` is called on mount with the enriched formData.
+- **`'skip'`**: `onChange` is not called on mount; the form renders with the original formData values; a subsequent user edit triggers `onChange` normally.
+- **`'silent'`**: `onChange` is not called for the initial evaluation; the internal enriched state is updated (so enriched values are visible in the rendered form); a subsequent user edit triggers `onChange` normally.
+- **`'silent'` with `onFormulaError`**: an evaluator error during initial evaluation still calls `onFormulaError` even though `onChange` is suppressed.
+- **`'silent'` with `onLoadingChange`**: loading callbacks fire normally during initial evaluation even though `onChange` is suppressed.
+
+---
+
+## Documentation
+
+- **JSDoc** on the `initialComputationMode` prop in `FormulaFormProps` — describe each mode and the default.
+- **`SPEC.md`** — add `initialComputationMode` to the `FormulaFormProps` type block and a short prose section under Data Flow describing mount behaviour per mode.
+- **`CHANGELOG.md`** — add an `Added` entry under `[Unreleased]`.
