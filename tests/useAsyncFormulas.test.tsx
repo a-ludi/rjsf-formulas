@@ -35,7 +35,8 @@ describe('useAsyncFormulas — debounce', () => {
         undefined,
         ctxOpts,
         () => true,
-        'warn'
+        'warn',
+        'always'
       )
     )
     expect((result.current.enrichedFormData as any).total).toBe(0)
@@ -55,7 +56,8 @@ describe('useAsyncFormulas — debounce', () => {
         undefined,
         ctxOpts,
         () => true,
-        'warn'
+        'warn',
+        'always'
       )
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
@@ -77,7 +79,8 @@ describe('useAsyncFormulas — debounce', () => {
         undefined,
         ctxOpts,
         () => true,
-        'warn'
+        'warn',
+        'always'
       )
     )
     // Wait for initial evaluation
@@ -111,7 +114,8 @@ describe('useAsyncFormulas — debounce', () => {
         undefined,
         ctxOpts,
         () => true,
-        'warn'
+        'warn',
+        'always'
       )
     )
     // Wait for initial evaluation
@@ -148,7 +152,8 @@ describe('useAsyncFormulas — onLoadingChange', () => {
         onLoadingChange,
         ctxOpts,
         () => true,
-        'warn'
+        'warn',
+        'always'
       )
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
@@ -181,7 +186,8 @@ describe('useAsyncFormulas — error handling', () => {
         undefined,
         ctxOpts,
         () => true,
-        'warn'
+        'warn',
+        'always'
       )
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
@@ -198,7 +204,7 @@ describe('useAsyncFormulas — external formData prop', () => {
     const fields = [field(['total'], 'price * quantity')]
     let currentFormData: unknown = { price: 2, quantity: 3, total: 0 }
     const { result, rerender } = renderHook(() =>
-      useAsyncFormulas(currentFormData, fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn')
+      useAsyncFormulas(currentFormData, fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn', 'always')
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
     expect((result.current.enrichedFormData as any).total).toBe(6)
@@ -237,7 +243,8 @@ describe('useAsyncFormulas — dirty state (in-flight re-evaluation)', () => {
         undefined,
         ctxOpts,
         () => true,
-        'warn'
+        'warn',
+        'always'
       )
     )
 
@@ -295,7 +302,8 @@ describe('useAsyncFormulas — dirty state (in-flight re-evaluation)', () => {
         undefined,
         ctxOpts,
         () => true,
-        'warn'
+        'warn',
+        'always'
       )
     )
 
@@ -346,7 +354,8 @@ describe('useAsyncFormulas — unmount during evaluation', () => {
         onLoadingChange,
         ctxOpts,
         () => true,
-        'warn'
+        'warn',
+        'always'
       )
     )
 
@@ -382,7 +391,8 @@ describe('useAsyncFormulas — convergence limit', () => {
         undefined,
         ctxOpts,
         () => true,
-        'warn'
+        'warn',
+        'always'
       )
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
@@ -400,7 +410,7 @@ describe('useAsyncFormulas — React StrictMode compatibility', () => {
     const { result } = renderHook(
       () => useAsyncFormulas(
         { price: 2, quantity: 3, total: 0 },
-        fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn'
+        fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn', 'always'
       ),
       { wrapper: ({ children }) => <React.StrictMode>{children}</React.StrictMode> }
     )
@@ -415,7 +425,7 @@ describe('useAsyncFormulas — React StrictMode compatibility', () => {
     const { result, unmount } = renderHook(
       () => useAsyncFormulas(
         { price: 2, quantity: 3, total: 0 },
-        fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn'
+        fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn', 'always'
       )
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
@@ -426,7 +436,7 @@ describe('useAsyncFormulas — React StrictMode compatibility', () => {
     const { result: result2 } = renderHook(
       () => useAsyncFormulas(
         { price: 5, quantity: 4, total: 0 },
-        fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn'
+        fields, evalSimple, 300, 10, undefined, undefined, ctxOpts, () => true, 'warn', 'always'
       )
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
