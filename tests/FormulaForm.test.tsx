@@ -542,6 +542,59 @@ describe('FormulaForm — React StrictMode compatibility', () => {
       undefined
     )
   })
+
+  it('skip mode: does not call onChange on mount in StrictMode', async () => {
+    vi.useFakeTimers()
+    const onChange = vi.fn()
+    render(
+      <React.StrictMode>
+        <FormulaForm
+          schema={basic.schema as any}
+          formData={basic.formData as any}
+          validator={validator}
+          evaluator={evalSimple}
+          onChange={onChange}
+          initialComputationMode="skip"
+          Form={vi.fn(() => <div />) as any}
+        />
+      </React.StrictMode>
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('silent mode: does not call onChange on mount but fires after user edit in StrictMode', async () => {
+    vi.useFakeTimers()
+    const onChange = vi.fn()
+    const MockForm = vi.fn(({ onChange: innerOnChange }: any) => (
+      <button onClick={() => innerOnChange({ formData: { price: 5, quantity: 4, total: 30 } })}>
+        change
+      </button>
+    ))
+    const { getByText } = render(
+      <React.StrictMode>
+        <FormulaForm
+          schema={basic.schema as any}
+          formData={basic.formData as any}
+          validator={validator}
+          evaluator={evalSimple}
+          onChange={onChange}
+          initialComputationMode="silent"
+          Form={MockForm as any}
+        />
+      </React.StrictMode>
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onChange).not.toHaveBeenCalled()
+
+    onChange.mockClear()
+    act(() => { getByText('change').click() })
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ formData: { price: 5, quantity: 4, total: 20 } }),
+      undefined
+    )
+  })
 })
 
 describe('FormulaForm — initialComputationMode: skip', () => {
