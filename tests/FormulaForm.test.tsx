@@ -714,7 +714,7 @@ describe('FormulaForm — initialComputationMode: silent', () => {
       />
     )
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
-    expect(onLoadingChange).toHaveBeenCalledWith([['total']])
-    expect(onLoadingChange).toHaveBeenCalledWith([])
+    expect(onLoadingChange).toHaveBeenNthCalledWith(1, [['total']])
+    expect(onLoadingChange).toHaveBeenNthCalledWith(2, [])
   })
 })
