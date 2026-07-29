@@ -106,6 +106,20 @@ export type FormulaFormProps<
    * `onFormulaError` and `onLoadingChange` fire normally regardless of mode.
    */
   initialComputationMode?: 'always' | 'skip' | 'silent'
+
+  /**
+   * Extracts a comparable key from a computed field value for convergence checking.
+   * Two values are considered converged when their keys are deeply equal.
+   * Defaults to the identity function — full deep equality of the computed value.
+   *
+   * Useful when a formula returns a compound value that includes non-deterministic parts
+   * (e.g. a timestamp) that should not prevent convergence.
+   *
+   * @param value - The computed field's value from a convergence pass.
+   * @param path  - The concrete path of the computed field.
+   * @returns The value to use for convergence comparison.
+   */
+  convergenceKey?: (value: unknown, path: (string | number)[]) => unknown
 }
 
 /**
@@ -166,6 +180,7 @@ function FormulaFormImpl<
     onLoadingChange,
     formulaConflictBehavior = 'warn',
     initialComputationMode = 'always',
+    convergenceKey = (v: unknown) => v,
     onChange,
     ...rest
   } = props
@@ -218,7 +233,8 @@ function FormulaFormImpl<
     contextOptions,
     checkCondition,
     formulaConflictBehavior,
-    initialComputationMode
+    initialComputationMode,
+    convergenceKey
   )
 
   const onChangeRef = useRef(onChange)
