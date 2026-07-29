@@ -100,11 +100,15 @@ async function applyAllFormulas(
 function allConverged(
   prev: unknown,
   next: unknown,
-  formulaFields: FormulaField[]
+  formulaFields: FormulaField[],
+  convergenceKey: (value: unknown, path: (string | number)[]) => unknown
 ): boolean {
   for (const field of formulaFields) {
     for (const concretePath of expandPaths(field.path, next)) {
-      if (!deepEqual(getAt(prev, concretePath), getAt(next, concretePath))) {
+      if (!deepEqual(
+        convergenceKey(getAt(prev, concretePath), concretePath),
+        convergenceKey(getAt(next, concretePath), concretePath)
+      )) {
         return false
       }
     }
@@ -121,7 +125,8 @@ export async function enrich(
   formulaDataKey: string,
   formulaPathKey: string,
   checkCondition: (condition: RJSFSchema, formData: unknown) => boolean,
-  formulaConflictBehavior: 'ignore' | 'warn' | 'error'
+  formulaConflictBehavior: 'ignore' | 'warn' | 'error',
+  convergenceKey: (value: unknown, path: (string | number)[]) => unknown = v => v
 ): Promise<unknown> {
   // Filter to only active fields based on condition
   const activeFields = formulaFields.filter(field =>
@@ -160,7 +165,7 @@ export async function enrich(
 
   for (let pass = 0; pass < maxConvergencePasses; pass++) {
     const { data: candidate, errors } = await applyAllFormulas(current, deduped, evaluator, contextOptions)
-    if (allConverged(current, candidate, deduped)) {
+    if (allConverged(current, candidate, deduped, convergenceKey)) {
       // Stable — emit error callbacks now that we know this is the final result
       for (const { path, error } of errors) {
         onFormulaError?.(path, error)
@@ -176,7 +181,10 @@ export async function enrich(
 
   for (const field of deduped) {
     for (const concretePath of expandPaths(field.path, candidate)) {
-      if (!deepEqual(getAt(current, concretePath), getAt(candidate, concretePath))) {
+      if (!deepEqual(
+        convergenceKey(getAt(current, concretePath), concretePath),
+        convergenceKey(getAt(candidate, concretePath), concretePath)
+      )) {
         onFormulaError?.(
           concretePath,
           new Error(
