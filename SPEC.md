@@ -212,7 +212,9 @@ The `convergenceKey` prop addresses this: it receives each computed value and it
 />
 ```
 
-`convergenceKey` is called once per computed field per convergence comparison (on both the previous and current pass values). The default is the identity function, preserving existing deep-equality behavior exactly.
+For fields inside arrays, the last segment of `path` is the element's numeric index, not a field name.
+
+`convergenceKey` is called twice per computed field per convergence comparison — once for the previous pass value and once for the current pass value. The default is the identity function, preserving existing deep-equality behavior exactly.
 
 ### Async evaluation
 
