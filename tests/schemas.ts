@@ -285,3 +285,16 @@ export const legacyTupleItems: DemoSchema = {
   } as unknown as RJSFSchema,
   formData: { list_of_x_diffs: [{ x_before: 1.5, x_after: 3.7, x_diff: 0 }] },
 }
+
+export const compoundWithCounter: DemoSchema = {
+  label: 'Compound value with non-deterministic sub-field',
+  schema: {
+    type: 'object',
+    properties: {
+      price: { type: 'number' },
+      quantity: { type: 'number' },
+      result: { type: 'object', 'x-formula': 'compound' },
+    },
+  } as unknown as RJSFSchema,
+  formData: { price: 10, quantity: 3, result: null },
+}

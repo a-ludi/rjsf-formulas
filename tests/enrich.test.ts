@@ -217,6 +217,81 @@ describe('enrich', () => {
     expect(result.double).toBe(10)
     expect(result.quad).toBe(20)
   })
+
+  it('convergenceKey: non-deterministic sub-field does not prevent convergence', async () => {
+    let callCount = 0
+    const fields: FormulaField[] = [
+      { path: ['result'], formula: 'compound', contextMode: 'siblings', condition: true },
+    ]
+    const nonDeterministicEval = (_formula: string, ctx: any) => ({
+      value: ctx.price * ctx.quantity,
+      counter: ++callCount,
+    })
+    const errors: Array<{ path: (string | number)[]; error: Error }> = []
+    const result = await enrich(
+      { price: 10, quantity: 3, result: null },
+      fields,
+      nonDeterministicEval,
+      3,
+      (path, error) => errors.push({ path, error }),
+      '__formData__',
+      '__path__',
+      alwaysActive,
+      'warn',
+      (value: any) => value?.value,
+    ) as any
+    expect(errors).toHaveLength(0)
+    expect(result.result.value).toBe(30)
+  })
+
+  it('convergenceKey: chain of computed fields still propagates correctly', async () => {
+    const fields: FormulaField[] = [
+      { path: ['double'], formula: 'base * 2', contextMode: 'siblings', condition: true },
+      { path: ['result'], formula: 'compound', contextMode: 'siblings', condition: true },
+    ]
+    const eval_ = (_formula: string, ctx: any) => {
+      if (_formula === 'base * 2') return ctx.base * 2
+      return { value: ctx.double }
+    }
+    const errors: Array<{ path: (string | number)[]; error: Error }> = []
+    const result = await enrich(
+      { base: 5, double: 0, result: null },
+      fields,
+      eval_,
+      10,
+      (path, error) => errors.push({ path, error }),
+      '__formData__',
+      '__path__',
+      alwaysActive,
+      'warn',
+      (value: any) => value?.value ?? value,
+    ) as any
+    expect(errors).toHaveLength(0)
+    expect(result.double).toBe(10)
+    expect(result.result.value).toBe(10)
+  })
+
+  it('convergenceKey: genuine circular deps still trigger onFormulaError', async () => {
+    const fields: FormulaField[] = [
+      { path: ['x'], formula: 'x + 1', contextMode: 'siblings', condition: true },
+    ]
+    const errors: Array<{ path: (string | number)[]; error: Error }> = []
+    const result = await enrich(
+      { x: 0 },
+      fields,
+      evalSimple,
+      3,
+      (path, error) => errors.push({ path, error }),
+      '__formData__',
+      '__path__',
+      alwaysActive,
+      'warn',
+      (v: unknown) => v,
+    ) as any
+    expect(result.x).toBeUndefined()
+    expect(errors).toHaveLength(1)
+    expect(errors[0].error.message).toMatch(/did not converge/)
+  })
 })
 
 describe('enrich — condition filtering', () => {
