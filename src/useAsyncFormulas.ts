@@ -21,7 +21,8 @@ export function useAsyncFormulas(
   contextOptions: BuildContextOptions,
   checkCondition: (condition: RJSFSchema, formData: unknown) => boolean,
   formulaConflictBehavior: 'ignore' | 'warn' | 'error',
-  initialComputationMode: 'always' | 'skip' | 'silent'
+  initialComputationMode: 'always' | 'skip' | 'silent',
+  convergenceKey: (value: unknown, path: (string | number)[]) => unknown
 ): { enrichedFormData: unknown; handleInput: (newFormData: unknown) => void } {
   const [enrichedFormData, setEnrichedFormData] = useState<unknown>(formData)
 
@@ -40,6 +41,7 @@ export function useAsyncFormulas(
   const contextOptionsRef = useRef(contextOptions)
   const checkConditionRef = useRef(checkCondition)
   const formulaConflictBehaviorRef = useRef(formulaConflictBehavior)
+  const convergenceKeyRef = useRef(convergenceKey)
 
   useEffect(() => { onFormulaErrorRef.current = onFormulaError }, [onFormulaError])
   useEffect(() => { onLoadingChangeRef.current = onLoadingChange }, [onLoadingChange])
@@ -49,6 +51,7 @@ export function useAsyncFormulas(
   useEffect(() => { contextOptionsRef.current = contextOptions }, [contextOptions])
   useEffect(() => { checkConditionRef.current = checkCondition }, [checkCondition])
   useEffect(() => { formulaConflictBehaviorRef.current = formulaConflictBehavior }, [formulaConflictBehavior])
+  useEffect(() => { convergenceKeyRef.current = convergenceKey }, [convergenceKey])
 
   // startSequence reads all config from refs so it is stable across renders
   const startSequence = useCallback(() => {
@@ -90,7 +93,8 @@ export function useAsyncFormulas(
             contextOptionsRef.current.formulaDataKey,
             contextOptionsRef.current.formulaPathKey,
             checkConditionRef.current,
-            formulaConflictBehaviorRef.current
+            formulaConflictBehaviorRef.current,
+            convergenceKeyRef.current
           )
 
           if (isUnmountedRef.current) break
