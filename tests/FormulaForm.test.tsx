@@ -17,6 +17,7 @@ import {
   ifThenBranch,
   ifElseBranch,
   refResolved,
+  compoundWithCounter,
 } from './schemas'
 
 const evalSimple = (formula: string, ctx: object) =>
@@ -769,5 +770,33 @@ describe('FormulaForm — initialComputationMode: silent', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
     expect(onLoadingChange).toHaveBeenNthCalledWith(1, [['total']])
     expect(onLoadingChange).toHaveBeenNthCalledWith(2, [])
+  })
+})
+
+describe('FormulaForm — convergenceKey', () => {
+  it('prevents onFormulaError for compound values with non-deterministic sub-fields', async () => {
+    vi.useFakeTimers()
+    let callCount = 0
+    const onFormulaError = vi.fn()
+    const nonDeterministicEval = (_formula: string, ctx: any) => ({
+      value: ctx.price * ctx.quantity,
+      counter: ++callCount,
+    })
+    const MockForm = vi.fn(() => <div />) as any
+    render(
+      <FormulaForm
+        schema={compoundWithCounter.schema as any}
+        formData={compoundWithCounter.formData as any}
+        validator={validator}
+        evaluator={nonDeterministicEval}
+        convergenceKey={(value: any) => value?.value}
+        onFormulaError={onFormulaError}
+        Form={MockForm}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect(onFormulaError).not.toHaveBeenCalled()
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData.result.value).toBe(30)
   })
 })
