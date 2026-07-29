@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `convergenceKey` prop on `FormulaForm` (`(value: unknown, path: (string|number)[]) => unknown`, default: identity): extracts a comparable key from each computed field value for the convergence check. Useful when a formula returns a compound value containing non-deterministic sub-fields (e.g. a timestamp) — strip the non-deterministic part so convergence is determined by the stable remainder only.
+
 ## [0.5.0] - 2026-07-03
 
 ### Added

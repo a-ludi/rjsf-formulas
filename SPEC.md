@@ -45,6 +45,7 @@ type FormulaFormProps<T, S extends StrictRJSFSchema, F extends FormContextType> 
     // Evaluation tuning
     maxConvergencePasses?: number // default: 10
     debounceMs?: number           // default: 300
+    convergenceKey?: (value: unknown, path: (string | number)[]) => unknown  // default: identity
 
     // Initial computation control
     initialComputationMode?: 'always' | 'skip' | 'silent'  // default: 'always'
@@ -195,6 +196,23 @@ Because computed fields may reference other computed fields — and the evaluato
 5. If `maxConvergencePasses` is reached without convergence, call `onFormulaError` for each non-converging field with a "did not converge" error, and leave those fields at their previous values.
 
 This also handles circular dependencies: they never converge and are surfaced via `onFormulaError`.
+
+### Convergence key
+
+By default the convergence check uses full deep equality of each computed value. When a formula returns a compound value containing a non-deterministic sub-field (such as a computation timestamp), the output differs on every pass even if the meaningful parts are stable, and the loop always reaches `maxConvergencePasses`.
+
+The `convergenceKey` prop addresses this: it receives each computed value and its path and returns the part that should govern convergence. The library calls `deepEqual` on the returned keys instead of the raw values.
+
+```tsx
+<FormulaForm
+  convergenceKey={(value, path) =>
+    path.at(-1) === 'result' ? (value as any)?.value : value
+  }
+  ...
+/>
+```
+
+`convergenceKey` is called once per computed field per convergence comparison (on both the previous and current pass values). The default is the identity function, preserving existing deep-equality behavior exactly.
 
 ### Async evaluation
 
