@@ -8,6 +8,7 @@ export type DemoSchema = {
   formulaContextKey?: string
   formulaDataKey?: string
   formulaPathKey?: string
+  convergenceKey?: (value: unknown, path: (string | number)[]) => unknown
 }
 
 export const basic: DemoSchema = {
@@ -287,14 +288,15 @@ export const legacyTupleItems: DemoSchema = {
 }
 
 export const compoundWithCounter: DemoSchema = {
-  label: 'Compound value with non-deterministic sub-field',
+  label: 'Compound value with timestamp (convergenceKey)',
   schema: {
     type: 'object',
     properties: {
       price: { type: 'number' },
       quantity: { type: 'number' },
-      result: { type: 'object', 'x-formula': 'compound' },
+      result: { type: 'object', 'x-formula': '({value: price * quantity, timestamp: Date.now()})' },
     },
   } as unknown as RJSFSchema,
   formData: { price: 10, quantity: 3, result: null },
+  convergenceKey: (value: unknown) => (value as any)?.value,
 }
