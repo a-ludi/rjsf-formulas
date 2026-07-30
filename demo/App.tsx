@@ -127,6 +127,7 @@ export default function App() {
         formulaContextKey={selected.formulaContextKey}
         formulaDataKey={selected.formulaDataKey}
         formulaPathKey={selected.formulaPathKey}
+        convergenceKey={selected.convergenceKey}
         onLoadingChange={setLoadingPaths}
         onFormulaError={(path, error) =>
           console.error(`[formula error] ${path.join('.')}:`, error)
