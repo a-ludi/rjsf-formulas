@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-30
+
 ### Added
 
 - `convergenceKey` prop on `FormulaForm` (`(value: unknown, path: (string | number)[]) => unknown`, default: identity): extracts a comparable key from each computed field value for the convergence check. Useful when a formula returns a compound value containing non-deterministic sub-fields (e.g. a timestamp) — strip the non-deterministic part so convergence is determined by the stable remainder only.
@@ -101,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `analyzeSchema` utility: scans a JSON Schema and returns all formula field descriptors.
 - All schema keys and context injection keys are configurable via props.
 
-[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.3.2...v0.4.0
