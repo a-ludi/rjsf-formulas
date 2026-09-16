@@ -532,9 +532,14 @@ describe('analyzeSchema — allOf conflict detection', () => {
 describe('analyzeSchema — legacy tuple items (items as array)', () => {
   it('discovers formulas in draft-07 tuple form (items as array)', () => {
     const result = analyzeSchema(fixtures.legacyTupleItems as any)
-    expect(result).toHaveLength(1)
+    expect(result).toHaveLength(2)
+
     expect(result[0].path).toEqual(['list', 0, 'sum'])
     expect(result[0].formula).toBe('a + b')
     expect(result[0].condition).toBe(true)
+
+    expect(result[1].path).toEqual(['list', ARRAY_INDEX, 'sum'])
+    expect(result[1].formula).toBe('a + b + 0')
+    expect(result[1].condition).toBe(true)
   })
 })

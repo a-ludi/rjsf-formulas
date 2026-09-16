@@ -274,12 +274,20 @@ export const legacyTupleItems: DemoSchema = {
             properties: {
               x_before: { type: 'number', minimum: 0 },
               x_after: { type: 'number', minimum: 0 },
-              x_diff: { type: 'number', minimum: 0, 'x-formula': 'round(x_after - x_before, 4)' },
+              x_diff: { type: 'number', minimum: 0, 'x-formula': 'x_after - x_before' },
             },
             required: ['x_before', 'x_after', 'x_diff'],
           },
         ],
-        additionalItems: false,
+        additionalItems: {
+          type: 'object',
+          properties: {
+            x_before: { type: 'number', minimum: 0 },
+            x_after: { type: 'number', minimum: 0 },
+            x_diff: { type: 'number', minimum: 0, 'x-formula': 'x_after - x_before' },
+          },
+          required: ['x_before', 'x_after', 'x_diff'],
+        },
       },
     },
     required: ['list_of_x_diffs'],
