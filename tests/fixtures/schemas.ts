@@ -186,6 +186,14 @@ export const legacyTupleItems = {
           },
         },
       ],
+      additionalItems: {
+        type: 'object',
+        properties: {
+          a: { type: 'number' },
+          b: { type: 'number' },
+          sum: { type: 'number', 'x-formula': 'a + b + 0' },
+        },
+      },
     },
   },
 } as const

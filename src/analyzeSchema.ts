@@ -238,9 +238,13 @@ function traverse(
 
     // Rule 3b: items as array (legacy draft-07 tuple — positional schemas, equivalent to prefixItems)
     if (Array.isArray(schema.items)) {
-      ;(schema.items as RJSFSchema[]).forEach((itemSchema, index) => {
+      (schema.items as RJSFSchema[]).forEach((itemSchema, index) => {
         traverse(itemSchema, [...path, index], fields, formulaKey, formulaContextKey, formulaConflictBehavior, ambientCondition, rootSchema)
-      })
+      });
+
+      if (schema.additionalItems && typeof schema.additionalItems === 'object') {
+        traverse(schema.additionalItems, [...path, ARRAY_INDEX], fields, formulaKey, formulaContextKey, formulaConflictBehavior, ambientCondition, rootSchema);
+      }
     }
 
     // Rule 3c: items as object (uniform array — all elements share one schema)
