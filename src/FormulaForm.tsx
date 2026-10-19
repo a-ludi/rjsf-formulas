@@ -240,8 +240,18 @@ function FormulaFormImpl<
   const onChangeRef = useRef(onChange)
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
 
+  // handleChange fires onChange immediately with raw input and then calls handleInput,
+  // which now also calls setEnrichedFormData (optimistic update). That state change would
+  // re-trigger the effect below — a duplicate onChange with the same raw data. This flag
+  // suppresses exactly that one echo call; it is cleared by the effect after consuming it.
+  const skipNextOnChangeRef = useRef(false)
+
   useEffect(() => {
     if (formulaFields.length === 0) return
+    if (skipNextOnChangeRef.current) {
+      skipNextOnChangeRef.current = false
+      return
+    }
     if (suppressCountRef.current > 0) {
       suppressCountRef.current--
       return
@@ -250,6 +260,7 @@ function FormulaFormImpl<
   }, [enrichedFormData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (data: IChangeEvent<T, S, F>, id?: string) => {
+    skipNextOnChangeRef.current = true
     handleInput(data.formData)
     onChange?.(data, id)
   }

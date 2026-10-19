@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-10-19
+
+### Fixed
+
+- Eliminated flickering of non-formula fields during the debounce window: `handleInput` now immediately updates the displayed form data with the raw user input so the form reflects edits without waiting for formula evaluation to complete.
+
+## [0.6.1] - 2026-09-16
+
+### Fixed
+
+- `analyzeSchema` now traverses the `additionalItems` schema in legacy draft-07 tuple arrays, so formula fields placed on additional array positions are no longer silently skipped.
+
 ## [0.6.0] - 2026-07-30
 
 ### Added
@@ -103,7 +115,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `analyzeSchema` utility: scans a JSON Schema and returns all formula field descriptors.
 - All schema keys and context injection keys are configurable via props.
 
-[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.4.0...v0.4.1

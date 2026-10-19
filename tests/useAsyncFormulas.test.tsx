@@ -102,6 +102,35 @@ describe('useAsyncFormulas — debounce', () => {
     expect((result.current.enrichedFormData as any).total).toBe(4)
   })
 
+  it('immediately reflects new input in enrichedFormData before debounce fires', async () => {
+    vi.useFakeTimers()
+    const fields = [field(['total'], 'price * quantity')]
+    const { result } = renderHook(() =>
+      useAsyncFormulas(
+        { price: 2, quantity: 3, total: 0 },
+        fields,
+        evalSimple,
+        300,
+        10,
+        undefined,
+        undefined,
+        ctxOpts,
+        () => true,
+        'warn',
+        'always',
+        v => v
+      )
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    expect((result.current.enrichedFormData as any).total).toBe(6)
+
+    act(() => { result.current.handleInput({ price: 5, quantity: 4, total: 6 }) })
+
+    // enrichedFormData must immediately reflect the new input — no waiting for debounce
+    expect((result.current.enrichedFormData as any).price).toBe(5)
+    expect((result.current.enrichedFormData as any).quantity).toBe(4)
+  })
+
   it('does not evaluate before debounceMs when handleInput resets the timer', async () => {
     vi.useFakeTimers()
     const evaluator = vi.fn().mockImplementation(evalSimple)

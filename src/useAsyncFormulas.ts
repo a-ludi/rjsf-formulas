@@ -120,6 +120,7 @@ export function useAsyncFormulas(
   const handleInput = useCallback(
     (newFormData: unknown) => {
       pendingInputRef.current = newFormData
+      setEnrichedFormData(newFormData)
 
       // Flip any running fields to dirty
       const stateMap = fieldStateRef.current
