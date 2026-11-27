@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `refreshRef` prop on `FormulaForm`: pass a `MutableRefObject<(() => Promise<void>) | null>` to get an imperative handle for forcing formula re-evaluation outside the normal debounce cycle. The returned `Promise<void>` resolves when evaluation has converged. ([#7](https://github.com/a-ludi/rjsf-formulas/issues/7))
+
 ## [0.6.3] - 2026-11-27
 
 ### Fixed
