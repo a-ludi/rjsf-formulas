@@ -881,3 +881,69 @@ describe('FormulaForm — convergenceKey', () => {
     expect(lastCall[0].formData.result.value).toBe(30)
   })
 })
+
+describe('FormulaForm — refreshRef', () => {
+  it('populates refreshRef.current after mount', async () => {
+    vi.useFakeTimers()
+    const refreshRef = { current: null } as React.MutableRefObject<(() => Promise<void>) | null>
+
+    render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        refreshRef={refreshRef}
+        Form={vi.fn(() => <div />) as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+
+    expect(refreshRef.current).toBeTypeOf('function')
+  })
+
+  it('sets refreshRef.current to null after unmount', async () => {
+    vi.useFakeTimers()
+    const refreshRef = { current: null } as React.MutableRefObject<(() => Promise<void>) | null>
+
+    const { unmount } = render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        refreshRef={refreshRef}
+        Form={vi.fn(() => <div />) as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(refreshRef.current).toBeTypeOf('function')
+
+    act(() => { unmount() })
+    expect(refreshRef.current).toBeNull()
+  })
+
+  it('calling refreshRef.current() re-evaluates formulas and resolves', async () => {
+    vi.useFakeTimers()
+    const refreshRef = { current: null } as React.MutableRefObject<(() => Promise<void>) | null>
+    const MockForm = vi.fn<(props: any) => React.ReactElement>(() => <div />)
+
+    render(
+      <FormulaForm
+        schema={basic.schema as any}
+        formData={basic.formData as any}
+        validator={validator}
+        evaluator={evalSimple}
+        refreshRef={refreshRef}
+        Form={MockForm as any}
+      />
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    MockForm.mockClear()
+
+    await act(async () => { await refreshRef.current!() })
+
+    const lastCall = MockForm.mock.calls[MockForm.mock.calls.length - 1]
+    expect(lastCall[0].formData).toEqual({ price: 10, quantity: 3, total: 30 })
+  })
+})
