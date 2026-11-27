@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useRef } from 'react'
 import Form from '@rjsf/core'
 import validator from '@rjsf/validator-ajv8'
 import { FormulaForm } from '../src/FormulaForm'
@@ -23,6 +23,8 @@ export default function App() {
   const [delay, setDelay] = useState(0)
   const [loadingPaths, setLoadingPaths] = useState<(string | number)[][]>([])
   const [lastFormData, setLastFormData] = useState<unknown>(schemaEntries[0][1].formData)
+  const [refreshing, setRefreshing] = useState(false)
+  const refreshRef = useRef<(() => Promise<void>) | null>(null)
 
   const selected = schemaEntries.find(([k]) => k === selectedKey)![1]
 
@@ -89,6 +91,16 @@ export default function App() {
           />
           <span style={{ minWidth: '4rem' }}>{delay} ms</span>
         </label>
+        <button
+          disabled={refreshing}
+          onClick={async () => {
+            setRefreshing(true)
+            await refreshRef.current?.()
+            setRefreshing(false)
+          }}
+        >
+          {refreshing ? 'Refreshing…' : 'Refresh'}
+        </button>
       </div>
 
       {/* Formula status row */}
@@ -119,6 +131,7 @@ export default function App() {
       {/* FormulaForm — key resets state when schema changes */}
       <FormulaForm
         key={selectedKey}
+        refreshRef={refreshRef}
         schema={selected.schema as any}
         formData={selected.formData as any}
         validator={validator}
