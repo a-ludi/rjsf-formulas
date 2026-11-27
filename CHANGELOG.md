@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-27
+
 ### Added
 
 - `refreshRef` prop on `FormulaForm`: pass a `MutableRefObject<(() => Promise<void>) | null>` to get an imperative handle for forcing formula re-evaluation outside the normal debounce cycle. The returned `Promise<void>` resolves when evaluation has converged. ([#7](https://github.com/a-ludi/rjsf-formulas/issues/7))
@@ -125,7 +127,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `analyzeSchema` utility: scans a JSON Schema and returns all formula field descriptors.
 - All schema keys and context injection keys are configurable via props.
 
-[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.3...v0.7.0
 [0.6.3]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.0...v0.6.1
