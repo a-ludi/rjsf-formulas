@@ -616,6 +616,7 @@ describe('useAsyncFormulas — refresh', () => {
     await act(async () => { unmount() })
     expect(resolved).toBe(true)  // cleanup must drain the resolver queue
 
+    expect(gates).toHaveLength(1) // evaluator was actually called (evaluation started)
     // Let the in-flight run() see isUnmountedRef and exit cleanly
     await act(async () => { gates[0]?.() })
   })
