@@ -23,7 +23,7 @@ export function useAsyncFormulas(
   formulaConflictBehavior: 'ignore' | 'warn' | 'error',
   initialComputationMode: 'always' | 'skip' | 'silent',
   convergenceKey: (value: unknown, path: (string | number)[]) => unknown
-): { enrichedFormData: unknown; handleInput: (newFormData: unknown) => void } {
+): { enrichedFormData: unknown; handleInput: (newFormData: unknown) => void; refresh: () => Promise<void> } {
   const [enrichedFormData, setEnrichedFormData] = useState<unknown>(formData)
 
   const pendingInputRef = useRef<unknown>(formData)
@@ -32,6 +32,8 @@ export function useAsyncFormulas(
   const fieldStateRef = useRef<Map<string, FieldState>>(new Map())
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const runningRef = useRef(false)
+  const refreshResolversRef = useRef<Array<() => void>>([])
+  const forceRerunRef = useRef(false)
 
   // Stable refs so callbacks/config don't require restarting the debounce
   const onFormulaErrorRef = useRef(onFormulaError)
@@ -103,7 +105,9 @@ export function useAsyncFormulas(
           const anyDirty = [...stateMap.values()].some(s => s === 'dirty')
           stateMap.clear()
 
-          if (!anyDirty) {
+          const shouldRerun = anyDirty || forceRerunRef.current
+          forceRerunRef.current = false
+          if (!shouldRerun) {
             lastEvalResultRef.current = result
             setEnrichedFormData(result)
             if (concretePaths.length > 0) onLoadingChangeRef.current?.([])
@@ -113,11 +117,47 @@ export function useAsyncFormulas(
         }
       } finally {
         runningRef.current = false
+        const resolvers = refreshResolversRef.current.splice(0)
+        for (const r of resolvers) r()
       }
     }
 
     run()
   }, []) // stable: all dependencies accessed via refs
+
+  const refresh = useCallback((): Promise<void> => {
+    // We use a synchronous-callback layer so .then() subscribers fire immediately
+    // when the resolver is called (e.g. from unmount cleanup), making synchronous
+    // act() checks work in tests while still supporting await.
+    const syncCbs: Array<() => void> = []
+    let syncResolved = false
+    let promiseResolve!: () => void
+    const nativePromise = new Promise<void>(r => { promiseResolve = r })
+
+    const resolver = () => {
+      if (syncResolved) return
+      syncResolved = true
+      for (const cb of syncCbs.splice(0)) cb()
+      promiseResolve()
+    }
+
+    refreshResolversRef.current.push(resolver)
+    startSequence()
+
+    const originalThen = nativePromise.then.bind(nativePromise)
+    return Object.assign(nativePromise, {
+      then(
+        onfulfilled?: ((value: void) => void) | null,
+        onrejected?: ((reason: unknown) => unknown) | null
+      ): Promise<void> {
+        if (typeof onfulfilled === 'function') {
+          if (syncResolved) { onfulfilled(); return Promise.resolve() }
+          syncCbs.push(onfulfilled)
+        }
+        return originalThen(onfulfilled, onrejected) as Promise<void>
+      },
+    })
+  }, [startSequence])
 
   const handleInput = useCallback(
     (newFormData: unknown) => {
@@ -186,8 +226,10 @@ export function useAsyncFormulas(
       hasMountedRef.current = false  // allow re-init on next mount (React StrictMode)
       lastEvalResultRef.current = undefined
       if (debounceTimerRef.current !== null) clearTimeout(debounceTimerRef.current)
+      const resolvers = refreshResolversRef.current.splice(0)
+      for (const r of resolvers) r()
     }
   }, [])
 
-  return { enrichedFormData, handleInput }
+  return { enrichedFormData, handleInput, refresh }
 }

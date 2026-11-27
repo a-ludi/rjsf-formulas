@@ -482,3 +482,141 @@ describe('useAsyncFormulas — React StrictMode compatibility', () => {
     expect((result2.current.enrichedFormData as any).total).toBe(20)
   })
 })
+
+describe('useAsyncFormulas — refresh', () => {
+  it('refresh() evaluates immediately without waiting for debounce', async () => {
+    vi.useFakeTimers()
+    const evaluator = vi.fn().mockImplementation(evalSimple)
+    const fields = [field(['total'], 'price * quantity')]
+    const { result } = renderHook(() =>
+      useAsyncFormulas(
+        { price: 2, quantity: 3, total: 6 },
+        fields, evaluator, 300, 10,
+        undefined, undefined, ctxOpts, () => true, 'warn', 'always', v => v
+      )
+    )
+    await act(async () => { await vi.advanceTimersByTimeAsync(300) })
+    evaluator.mockClear()
+
+    // No timer advance — refresh() must bypass the debounce entirely
+    await act(async () => { await result.current.refresh() })
+
+    expect(evaluator).toHaveBeenCalledTimes(1)
+  })
+
+  it('promise from refresh() resolves after sync evaluation settles', async () => {
+    const fields = [field(['total'], 'price * quantity')]
+    const { result } = renderHook(() =>
+      useAsyncFormulas(
+        { price: 2, quantity: 3, total: 0 },
+        fields, evalSimple, 0, 10,
+        undefined, undefined, ctxOpts, () => true, 'warn', 'skip', v => v
+      )
+    )
+
+    await act(async () => { await result.current.refresh() })
+
+    expect((result.current.enrichedFormData as any).total).toBe(6)
+  })
+
+  it('promise from refresh() resolves after async evaluation settles', async () => {
+    const asyncEval = async (formula: string, ctx: object) => evalSimple(formula, ctx)
+    const fields = [field(['total'], 'price * quantity')]
+    const { result } = renderHook(() =>
+      useAsyncFormulas(
+        { price: 2, quantity: 3, total: 0 },
+        fields, asyncEval, 0, 10,
+        undefined, undefined, ctxOpts, () => true, 'warn', 'skip', v => v
+      )
+    )
+
+    await act(async () => { await result.current.refresh() })
+
+    expect((result.current.enrichedFormData as any).total).toBe(6)
+  })
+
+  it('refresh() mid-run causes an extra pass and both promises resolve', async () => {
+    // Manually-gated evaluator: each call pushes a resolve function into `gates`
+    const gates: Array<() => void> = []
+    const blockedEval = (_: string, ctx: any) =>
+      new Promise<unknown>(resolve => { gates.push(() => resolve(evalSimple(_, ctx))) })
+
+    const fields = [field(['total'], 'price * quantity')]
+    const { result } = renderHook(() =>
+      useAsyncFormulas(
+        { price: 2, quantity: 3, total: 0 },
+        fields, blockedEval, 0, 10,
+        undefined, undefined, ctxOpts, () => true, 'warn', 'skip', v => v
+      )
+    )
+
+    let p1Resolved = false, p2Resolved = false
+
+    // Both calls happen synchronously; second hits the runningRef guard.
+    // applyAllFormulas calls the evaluator synchronously before its first await,
+    // so gates[0] is populated here without needing a microtask flush.
+    act(() => {
+      result.current.refresh().then(() => { p1Resolved = true })
+      result.current.refresh().then(() => { p2Resolved = true })
+    })
+
+    // gates[0] is synchronously populated because applyAllFormulas calls
+    // evaluator() inside the Promise executor (before its first await).
+    expect(gates).toHaveLength(1)  // pass 1 in flight
+
+    // Resolve pass 1 → loop sees forceRerunRef=true → starts pass 2
+    await act(async () => { gates[0]() })
+    expect(gates).toHaveLength(2)  // pass 2 started
+    expect(p1Resolved).toBe(false) // still pending
+
+    // Resolve pass 2 → converges → finally drains all resolvers
+    await act(async () => { gates[1]() })
+    expect(p1Resolved).toBe(true)
+    expect(p2Resolved).toBe(true)
+  })
+
+  it('multiple concurrent refresh() calls each return a promise that resolves', async () => {
+    const fields = [field(['total'], 'price * quantity')]
+    const { result } = renderHook(() =>
+      useAsyncFormulas(
+        { price: 2, quantity: 3, total: 0 },
+        fields, evalSimple, 0, 10,
+        undefined, undefined, ctxOpts, () => true, 'warn', 'skip', v => v
+      )
+    )
+
+    await act(async () => {
+      const p1 = result.current.refresh()
+      const p2 = result.current.refresh()
+      await Promise.all([p1, p2])
+    })
+
+    expect((result.current.enrichedFormData as any).total).toBe(6)
+  })
+
+  it('promise from refresh() resolves when component unmounts before evaluation completes', async () => {
+    const gates: Array<() => void> = []
+    const blockedEval = (_: string, ctx: any) =>
+      new Promise<unknown>(resolve => { gates.push(() => resolve(evalSimple(_, ctx))) })
+
+    const fields = [field(['total'], 'price * quantity')]
+    const { result, unmount } = renderHook(() =>
+      useAsyncFormulas(
+        { price: 2, quantity: 3, total: 0 },
+        fields, blockedEval, 0, 10,
+        undefined, undefined, ctxOpts, () => true, 'warn', 'skip', v => v
+      )
+    )
+
+    let resolved = false
+    act(() => { result.current.refresh().then(() => { resolved = true }) })
+    expect(resolved).toBe(false)  // evaluator not yet unblocked
+
+    // Unmount while evaluation is in flight
+    act(() => { unmount() })
+    expect(resolved).toBe(true)  // cleanup must drain the resolver queue
+
+    // Let the in-flight run() see isUnmountedRef and exit cleanly
+    await act(async () => { gates[0]?.() })
+  })
+})
