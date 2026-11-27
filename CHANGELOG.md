@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed infinite re-evaluation loop when a non-deterministic formula (e.g. one embedding `Date.now()`) reflects its result back via a controlled parent's `onChange`. `handleInput` now skips re-evaluation when only formula-owned fields changed.
+
 ## [0.6.2] - 2026-10-19
 
 ### Fixed

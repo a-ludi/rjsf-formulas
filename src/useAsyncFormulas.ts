@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { FormulaField } from './analyzeSchema'
-import { expandPaths, enrich, deepEqual } from './enrich'
+import { expandPaths, enrich, deepEqual, nonFormulaFieldsUnchanged } from './enrich'
 import type { BuildContextOptions } from './buildContext'
 import type { RJSFSchema } from '@rjsf/utils'
 
@@ -28,6 +28,7 @@ export function useAsyncFormulas(
 
   const pendingInputRef = useRef<unknown>(formData)
   const lastExternalFormDataRef = useRef<unknown>(formData)
+  const lastEvalResultRef = useRef<unknown>(undefined)
   const fieldStateRef = useRef<Map<string, FieldState>>(new Map())
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const runningRef = useRef(false)
@@ -103,6 +104,7 @@ export function useAsyncFormulas(
           stateMap.clear()
 
           if (!anyDirty) {
+            lastEvalResultRef.current = result
             setEnrichedFormData(result)
             if (concretePaths.length > 0) onLoadingChangeRef.current?.([])
             break
@@ -119,6 +121,17 @@ export function useAsyncFormulas(
 
   const handleInput = useCallback(
     (newFormData: unknown) => {
+      // Guard: if only formula fields changed from the last enrich result, this is an
+      // echo of our own output (the enriched value reflected back via onChange →
+      // parent state → formData prop). Accept the value for display but skip re-evaluation.
+      if (
+        lastEvalResultRef.current !== undefined &&
+        nonFormulaFieldsUnchanged(lastEvalResultRef.current, newFormData, formulaFieldsRef.current)
+      ) {
+        setEnrichedFormData(newFormData)
+        return
+      }
+
       pendingInputRef.current = newFormData
       setEnrichedFormData(newFormData)
 
@@ -167,9 +180,11 @@ export function useAsyncFormulas(
   // by the time startSequence checks it.
   useEffect(() => {
     isUnmountedRef.current = false
+    lastEvalResultRef.current = undefined
     return () => {
       isUnmountedRef.current = true
       hasMountedRef.current = false  // allow re-init on next mount (React StrictMode)
+      lastEvalResultRef.current = undefined
       if (debounceTimerRef.current !== null) clearTimeout(debounceTimerRef.current)
     }
   }, [])

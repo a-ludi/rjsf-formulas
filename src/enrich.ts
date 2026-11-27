@@ -116,6 +116,21 @@ function allConverged(
   return true
 }
 
+export function nonFormulaFieldsUnchanged(
+  prev: unknown,
+  next: unknown,
+  formulaFields: FormulaField[]
+): boolean {
+  if (deepEqual(prev, next)) return true
+  const stripPrev = structuredClone(prev)
+  const stripNext = structuredClone(next)
+  for (const field of formulaFields) {
+    for (const cp of expandPaths(field.path, prev)) setAt(stripPrev, cp, undefined)
+    for (const cp of expandPaths(field.path, next)) setAt(stripNext, cp, undefined)
+  }
+  return deepEqual(stripPrev, stripNext)
+}
+
 export async function enrich(
   formData: unknown,
   formulaFields: FormulaField[],
