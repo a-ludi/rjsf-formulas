@@ -773,6 +773,87 @@ describe('FormulaForm — initialComputationMode: silent', () => {
   })
 })
 
+describe('FormulaForm — infinite re-eval loop prevention', () => {
+  // A non-deterministic formula (embeds a fresh value each evaluation, like Date.now())
+  // combined with a controlled parent (formData stored in state and fed back as a prop
+  // via onChange) creates an external loop:
+  //
+  //   enrich() → result with new timestamp
+  //   → setEnrichedFormData → onChange → parent setState
+  //   → formData prop changes → deepEqual returns false → handleInput
+  //   → enrich() again → another new timestamp → ...
+  //
+  // The fix detects when incoming formData differs from the last enrich() result only
+  // in formula-owned paths — an echo of our own output — and skips re-evaluation.
+  //
+  // Without the fix: each 10ms tick fires ≈2 evaluations (convergence passes), giving
+  // ~30 calls over 15 ticks. With the fix the cycle breaks after first convergence (≤2).
+
+  it('non-deterministic formula with convergenceKey does not loop indefinitely', async () => {
+    vi.useFakeTimers()
+    const evaluator = vi.fn((formula: string, ctx: object) => evalSimple(formula, ctx))
+
+    function ControlledForm() {
+      const [data, setData] = React.useState(compoundWithCounter.formData)
+      return (
+        <FormulaForm
+          schema={compoundWithCounter.schema as any}
+          formData={data as any}
+          validator={validator}
+          evaluator={evaluator}
+          debounceMs={10}
+          convergenceKey={(v: any) => v?.value}
+          onChange={(e) => setData(e.formData as any)}
+        />
+      )
+    }
+
+    render(<ControlledForm />)
+
+    for (let i = 0; i < 15; i++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(10) })
+    }
+
+    expect(evaluator.mock.calls.length).toBeLessThanOrEqual(2)
+  })
+
+  it('still re-evaluates when a non-formula field changes (guard does not suppress genuine changes)', async () => {
+    vi.useFakeTimers()
+    const evaluator = vi.fn((formula: string, ctx: object) => evalSimple(formula, ctx))
+
+    let externalSetData!: React.Dispatch<React.SetStateAction<any>>
+
+    function ControlledForm() {
+      const [data, setData] = React.useState(compoundWithCounter.formData)
+      externalSetData = setData
+      return (
+        <FormulaForm
+          schema={compoundWithCounter.schema as any}
+          formData={data as any}
+          validator={validator}
+          evaluator={evaluator}
+          debounceMs={10}
+          convergenceKey={(v: any) => v?.value}
+          onChange={(e) => setData(e.formData as any)}
+        />
+      )
+    }
+
+    render(<ControlledForm />)
+    // Let the initial convergence settle
+    for (let i = 0; i < 5; i++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(10) })
+    }
+    evaluator.mockClear()
+
+    // Change a non-formula field — guard must not suppress this
+    act(() => { externalSetData((prev: any) => ({ ...prev, price: 20 })) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(10) })
+
+    expect(evaluator).toHaveBeenCalled()
+  })
+})
+
 describe('FormulaForm — convergenceKey', () => {
   it('prevents onFormulaError for compound values with non-deterministic sub-fields', async () => {
     vi.useFakeTimers()

@@ -295,6 +295,39 @@ export const legacyTupleItems: DemoSchema = {
   formData: { list_of_x_diffs: [{ x_before: 1.5, x_after: 3.7, x_diff: 0 }] },
 }
 
+export const formulaArrayMinItems: DemoSchema = {
+  label: 'Formula returns fewer array items than minItems (Scenario B)',
+  schema: {
+    type: 'object',
+    properties: {
+      multiplier: { type: 'number' },
+      items: {
+        type: 'array',
+        minItems: 2,
+        items: { type: 'number' },
+        'x-formula': '[multiplier]',
+      },
+    },
+  } as unknown as RJSFSchema,
+  formData: { multiplier: 5, items: [] },
+}
+
+export const formulaArrayWrongType: DemoSchema = {
+  label: 'Formula returns object for array field (Scenario C)',
+  schema: {
+    type: 'object',
+    properties: {
+      multiplier: { type: 'number' },
+      items: {
+        type: 'array',
+        items: { type: 'number' },
+        'x-formula': '({value: multiplier})',
+      },
+    },
+  } as unknown as RJSFSchema,
+  formData: { multiplier: 5, items: [] },
+}
+
 export const compoundWithCounter: DemoSchema = {
   label: 'Compound value with timestamp (convergenceKey)',
   schema: {
