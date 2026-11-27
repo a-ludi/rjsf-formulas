@@ -544,7 +544,7 @@ describe('useAsyncFormulas — refresh', () => {
     const fields = [field(['total'], 'price * quantity')]
     const { result } = renderHook(() =>
       useAsyncFormulas(
-        { price: 2, quantity: 3, total: 0 },
+        { price: 2, quantity: 3, total: 6 },
         fields, blockedEval, 0, 10,
         undefined, undefined, ctxOpts, () => true, 'warn', 'skip', v => v
       )
@@ -602,7 +602,7 @@ describe('useAsyncFormulas — refresh', () => {
     const fields = [field(['total'], 'price * quantity')]
     const { result, unmount } = renderHook(() =>
       useAsyncFormulas(
-        { price: 2, quantity: 3, total: 0 },
+        { price: 2, quantity: 3, total: 6 },
         fields, blockedEval, 0, 10,
         undefined, undefined, ctxOpts, () => true, 'warn', 'skip', v => v
       )

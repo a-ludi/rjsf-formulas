@@ -142,6 +142,9 @@ export function useAsyncFormulas(
     }
 
     refreshResolversRef.current.push(resolver)
+    // Only force an extra iteration if a run is already in progress;
+    // a fresh startSequence() call will run at least once on its own.
+    if (runningRef.current) forceRerunRef.current = true
     startSequence()
 
     const originalThen = nativePromise.then.bind(nativePromise)
