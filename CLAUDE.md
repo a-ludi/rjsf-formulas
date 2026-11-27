@@ -45,6 +45,10 @@ All schemas used in unit tests must be defined in `tests/schemas.ts` as named `D
 
 This applies to bug fixes, new features, and edge cases alike. A test written after the implementation cannot prove the implementation is correct — it only proves the test and implementation agree.
 
+## Demo app
+
+The demo app lives in `demo/App.tsx`. When planning a new feature or bugfix, always offer to update the demo app to showcase or exercise the change.
+
 ## CHANGELOG
 
 Maintain `CHANGELOG.md` manually, following the [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format (Unreleased section at top, semantic versioning, grouped by Added/Changed/Deprecated/Removed/Fixed/Security).
