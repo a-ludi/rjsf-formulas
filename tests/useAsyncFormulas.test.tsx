@@ -613,7 +613,7 @@ describe('useAsyncFormulas — refresh', () => {
     expect(resolved).toBe(false)  // evaluator not yet unblocked
 
     // Unmount while evaluation is in flight
-    act(() => { unmount() })
+    await act(async () => { unmount() })
     expect(resolved).toBe(true)  // cleanup must drain the resolver queue
 
     // Let the in-flight run() see isUnmountedRef and exit cleanly

@@ -126,39 +126,10 @@ export function useAsyncFormulas(
   }, []) // stable: all dependencies accessed via refs
 
   const refresh = useCallback((): Promise<void> => {
-    // We use a synchronous-callback layer so .then() subscribers fire immediately
-    // when the resolver is called (e.g. from unmount cleanup), making synchronous
-    // act() checks work in tests while still supporting await.
-    const syncCbs: Array<() => void> = []
-    let syncResolved = false
-    let promiseResolve!: () => void
-    const nativePromise = new Promise<void>(r => { promiseResolve = r })
-
-    const resolver = () => {
-      if (syncResolved) return
-      syncResolved = true
-      for (const cb of syncCbs.splice(0)) cb()
-      promiseResolve()
-    }
-
-    refreshResolversRef.current.push(resolver)
-    // Only force an extra iteration if a run is already in progress;
-    // a fresh startSequence() call will run at least once on its own.
-    if (runningRef.current) forceRerunRef.current = true
-    startSequence()
-
-    const originalThen = nativePromise.then.bind(nativePromise)
-    return Object.assign(nativePromise, {
-      then(
-        onfulfilled?: ((value: void) => void) | null,
-        onrejected?: ((reason: unknown) => unknown) | null
-      ): Promise<void> {
-        if (typeof onfulfilled === 'function') {
-          if (syncResolved) { onfulfilled(); return Promise.resolve() }
-          syncCbs.push(onfulfilled)
-        }
-        return originalThen(onfulfilled, onrejected) as Promise<void>
-      },
+    return new Promise(resolve => {
+      refreshResolversRef.current.push(resolve)
+      if (runningRef.current) forceRerunRef.current = true
+      startSequence()
     })
   }, [startSequence])
 
