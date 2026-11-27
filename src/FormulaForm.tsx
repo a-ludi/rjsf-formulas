@@ -120,6 +120,13 @@ export type FormulaFormProps<
    * @returns The value to use for convergence comparison.
    */
   convergenceKey?: (value: unknown, path: (string | number)[]) => unknown
+
+  /**
+   * Ref that receives the `refresh` function on mount and is set to `null` on unmount.
+   * Call `refreshRef.current?.()` to force formula re-evaluation outside the normal
+   * debounce/input cycle. The returned `Promise<void>` resolves when evaluation converges.
+   */
+  refreshRef?: React.MutableRefObject<(() => Promise<void>) | null>
 }
 
 /**
@@ -182,6 +189,7 @@ function FormulaFormImpl<
     initialComputationMode = 'always',
     convergenceKey = (v: unknown) => v,
     onChange,
+    refreshRef,
     ...rest
   } = props
 
@@ -222,7 +230,7 @@ function FormulaFormImpl<
     return () => { suppressCountRef.current = suppressCount }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { enrichedFormData, handleInput } = useAsyncFormulas(
+  const { enrichedFormData, handleInput, refresh } = useAsyncFormulas(
     formData,
     formulaFields,
     evaluator,
@@ -236,6 +244,12 @@ function FormulaFormImpl<
     initialComputationMode,
     convergenceKey
   )
+
+  useEffect(() => {
+    if (!refreshRef) return
+    refreshRef.current = refresh
+    return () => { refreshRef.current = null }
+  }, [refresh, refreshRef])
 
   const onChangeRef = useRef(onChange)
   useEffect(() => { onChangeRef.current = onChange }, [onChange])
