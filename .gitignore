@@ -1,4 +1,5 @@
 .claude/
+.codegraph/
 .obsidian/
 node_modules/
 dist/
