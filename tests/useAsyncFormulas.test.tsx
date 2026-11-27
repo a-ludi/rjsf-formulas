@@ -620,4 +620,18 @@ describe('useAsyncFormulas — refresh', () => {
     // Let the in-flight run() see isUnmountedRef and exit cleanly
     await act(async () => { gates[0]?.() })
   })
+
+  it('promise from refresh() resolves when there are no formula fields', async () => {
+    const { result } = renderHook(() =>
+      useAsyncFormulas(
+        { price: 2, quantity: 3 },
+        [], evalSimple, 0, 10,
+        undefined, undefined, ctxOpts, () => true, 'warn', 'skip', v => v
+      )
+    )
+
+    await act(async () => { await result.current.refresh() })
+
+    expect(result.current.enrichedFormData).toEqual({ price: 2, quantity: 3 })
+  })
 })
