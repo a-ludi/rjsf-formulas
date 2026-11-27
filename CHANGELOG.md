@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-11-27
+
 ### Fixed
 
 - Fixed infinite re-evaluation loop when a non-deterministic formula (e.g. one embedding `Date.now()`) reflects its result back via a controlled parent's `onChange`. `handleInput` now skips re-evaluation when only formula-owned fields changed.
@@ -120,6 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All schema keys and context injection keys are configurable via props.
 
 [Unreleased]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.2...HEAD
+[0.6.3]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.2...v0.6.3
 [0.6.2]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/a-ludi/rjsf-formulas/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/a-ludi/rjsf-formulas/compare/v0.5.0...v0.6.0
